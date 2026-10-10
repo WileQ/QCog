@@ -98,6 +98,60 @@ def test_fast_mode_omits_sweep_contents():
     assert len(full.analysis["sweeps"]["sharpness"].table.columns) > 1
 
 
+def test_showcase_script_runs_from_a_checkout():
+    """The top-level demo must keep working: it is the first thing a reader runs."""
+    import subprocess
+    import sys
+
+    root = Path(__file__).resolve().parents[1]
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(root / "showcase" / "run_showcase.py"),
+            "--models",
+            "question-order",
+            "--fast",
+            "--no-figures",
+        ],
+        cwd=str(root),
+        capture_output=True,
+        text=True,
+        timeout=600,
+    )
+    assert completed.returncode == 0, completed.stderr
+    output = completed.stdout
+    for section in ("PARAMETERS", "SUMMARY", "FINDINGS", "AGAINST THE CLASSICAL BASELINE",
+                    "QUANTUM CIRCUIT", "WHAT THIS DOES NOT CLAIM", "ADJUST THEM"):
+        assert section in output, section
+
+
+def test_showcase_accepts_parameter_overrides(tmp_path):
+    import subprocess
+    import sys
+
+    root = Path(__file__).resolve().parents[1]
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(root / "showcase" / "run_showcase.py"),
+            "--models",
+            "question-order",
+            "--param",
+            "angle_a=2.0",
+            "--fast",
+            "--no-figures",
+        ],
+        cwd=str(tmp_path),   # also proves the script works from any working directory
+        capture_output=True,
+        text=True,
+        timeout=600,
+    )
+    assert completed.returncode == 0, completed.stderr
+    lines = [line.strip() for line in completed.stdout.splitlines()]
+    assert any(line.startswith("angle_a") and "= 2.0" in line for line in lines), lines[:12]
+    assert "overrides: {'angle_a': 2.0}" in completed.stdout
+
+
 def test_evidence_is_all_passing():
     rows = run_evidence()
     assert len(rows) >= 15

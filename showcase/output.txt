@@ -1,0 +1,215 @@
+Q-Cog showcase
+   models: superposition-beliefs, semantic-ambiguity, auctions, collective-judgment
+   overrides: none   sweeps: on
+   figures: C:\Users\wikto\Desktop\projects\qollab_hackaton_v1\showcase\figures
+
+============================================================================================
+Superposition of beliefs versus classical uncertainty
+module A - Individual cognition and decision making   |   slug: superposition-beliefs
+============================================================================================
+QUESTION  : When someone reports 'fifty-fifty', is the attitude genuinely unresolved, or settled but unknown? Response probabilities alone cannot tell the difference.
+MECHANISM : Coherent superposition versus statistical mixture: coherence is invisible to the question whose answer distribution it defined, and visible to any question incompatible with it.
+CLASSICAL : A classical model identifies a 50/50 belief with the distribution (1/2, 1/2) and therefore predicts that no other question can distinguish the two situations.
+
+PARAMETERS (every one adjustable from Python: model.run(name=value))
+    belief_angle             = 1.5707963267948966     float  [0.0, 3.141592653589793]
+    probe_angle              = 1.5707963267948966     float  [0.0, 3.141592653589793]
+    decoherence              = 0.15                   float  [0.0, 1.0]
+    (executed exactly on the exact backend)
+
+SUMMARY: Same marginal, different states: p(Q2=yes) = 1.00 (coherent) versus 0.50 (classical ignorance).
+
+FINDINGS
+  * Both the coherent belief and the classical ignorance state answer Q1 with p(0) = 0.500: the marginal cannot tell them apart.
+  * They are separated by Q2: p(Q2=yes) is 1.000 for the coherent state, 0.925 after decoherence and 0.500 for the mixture (distinguishability index 0.500).
+  * The decoherence sweep turns the coherent state continuously into the ignorance state: the difference between the two is coherence, and nothing else.
+  * Asking Q1 first and Q2 second does not separate them, because the first sharp question erases the coherence; incompatibility has to be probed by asking the *other* question, not the same one again.
+
+AGAINST THE CLASSICAL BASELINE: classical ignorance model
+    A classical model that knows only the 50/50 answer distribution must predict the same distribution for every other question as well.
+    quantity                                           quantum  classical
+    distinguishability of the two states                 1.000      0.500
+    -> The classical reference values are shown next to the model's; the difference between the two bars is the model's content, and where they agree the classical account is adequate.
+
+QUANTUM CIRCUIT
+    first then probe: 1 qubit, 2 classical bits, depth 6, 6 operations
+    probe then first: 1 qubit, 2 classical bits, depth 6, 6 operations
+
+WHAT THIS DOES NOT CLAIM
+  - This is a model of response probabilities, not a claim about what the brain does.
+  - A quantum model only means the data are described by a quantum probability space; classical models may fit equally well, and the classical baseline is reported for that reason.
+  - Coherence is a property of the model state; nothing here claims coherence has been measured in a person.
+  - With a single qubit, asking one sharp question erases exactly the coherence that a different sharp question would have revealed - which is why the model compares two separate questions rather than one question asked twice.
+
+============================================================================================
+Semantic ambiguity: context fixes a word's sense
+module B - Logic, concepts and memory   |   slug: semantic-ambiguity
+============================================================================================
+QUESTION  : How does the surrounding sentence select one sense of an ambiguous word, and why does asking about the sense first lock the interpretation in?
+MECHANISM : Senses as basis states of a three-level system, context as a unitary transformation acting before the sense question is asked; the order matters because the sense question is a measurement.
+CLASSICAL : Context as prior re-weighting: the sense distribution is updated by the context, and the same posterior is available before or after any other judgement.
+
+PARAMETERS (every one adjustable from Python: model.run(name=value))
+    sense_1_weight           = 0.7                    float  [0.05, 0.95]
+    context_strength         = 0.9                    float  [0.0, 1.5707963267948966]
+    context_scope            = narrow                 choice    one of ['narrow', 'broad']
+    (executed exactly on the exact backend)
+
+SUMMARY: Context shifts the dominant sense by -0.653, and a resolved sense is immune to later context.
+
+FINDINGS
+  * Without context the dominant sense 'sense 1' is chosen with probability 0.700; the sentence context moves it to 0.047 (-0.653), and the opposite context to 0.678.
+  * Once the sense has been resolved, the same question asked again reproduces it with probability 1.000 (penalty 0.000): the interpretation is fixed and a later context cannot move it.
+  * A prior-updating account predicts that the context can be applied at any time with the same effect, so this ordering asymmetry is the model's testable content.
+
+AGAINST THE CLASSICAL BASELINE: context as prior re-weighting
+    A classical account updates the sense prior with the context; the posterior is available at any point, so asking about the sense first cannot make the context inert.
+    quantity                                           quantum  classical
+    p(dominant sense) with no context                    0.700      0.700
+    change in p(dominant sense) caused by context       -0.653      0.000
+    -> The classical reference values are shown next to the model's; the difference between the two bars is the model's content, and where they agree the classical account is adequate.
+
+QUANTUM CIRCUIT
+    sense: 2 qubits, 2 classical bits, depth 3, 4 operations
+
+WHAT THIS DOES NOT CLAIM
+  - This is a model of response probabilities, not a claim about what the brain does.
+  - A quantum model only means the data are described by a quantum probability space; classical models may fit equally well, and the classical baseline is reported for that reason.
+  - Three senses and one rotation angle are a schematic; real lexical disambiguation needs a corpus.
+
+============================================================================================
+Auctions, competitive bidding and the order of value and bid
+module C - Strategic decisions and game theory   |   slug: auctions
+============================================================================================
+QUESTION  : Why are bids correlated with the order in which a bidder thinks about the item's value and about the competition?
+MECHANISM : A three-level valuation question and a dichotomous bidding question that do not commute; a unitary rotation represents the information about rivals.
+CLASSICAL : Risk-neutral bidding: the bid is a deterministic function of the (estimated) value, so no presentation order can change it.
+
+PARAMETERS (every one adjustable from Python: model.run(name=value))
+    valuation_confidence     = 0.55                   float  [0.05, 0.95]
+    rival_pressure           = 0.6                    float  [0.0, 1.5707963267948966]
+    bid_aggressiveness       = 0.8                    float  [0.1, 2.0943951023931953]
+    (executed exactly on the exact backend)
+
+SUMMARY: Bid after a high valuation 0.848 versus 0.076 after a low one; order shift -0.034.
+
+FINDINGS
+  * After answering that the item is high-value, the bidder bids high with probability 0.848; after a low valuation, with probability 0.076. The bidding question is genuinely sensitive to the valuation answer.
+  * Reversing the order changes the valuation marginal by -0.034, which the order-invariant classical baseline cannot produce.
+  * Thinking about rival bidders shifts the high bid by +0.173 in this model: rival information acts as a rotation of the belief, not as a change of the value estimate.
+  * The practical warning is the classical one - a bidder whose bid depends on the order of their own deliberation cannot know whether the bid or the valuation was primary.
+
+AGAINST THE CLASSICAL BASELINE: risk-neutral bidding
+    The bid is a function of the value estimate, so the same estimate produces the same bid whatever order the questions arrive in.
+    quantity                                           quantum  classical
+    order effect on the valuation marginal              -0.034      0.000
+    shift caused by information about rivals             0.173      0.000
+    -> Every row compares the model with the value a classical account is forced to give - exactly zero - so the bars are the model's own content.
+
+QUANTUM CIRCUIT
+    valuation then bid: 2 qubits, 4 classical bits, depth 6, 8 operations
+    bid then valuation: 2 qubits, 4 classical bits, depth 6, 8 operations
+
+WHAT THIS DOES NOT CLAIM
+  - This is a model of response probabilities, not a claim about what the brain does.
+  - A quantum model only means the data are described by a quantum probability space; classical models may fit equally well, and the classical baseline is reported for that reason.
+  - The valuation question is a three-outcome model of a continuous estimate; the third outcome stands for the high-value region.
+
+============================================================================================
+Collective judgement: the wisdom of crowds and correlation
+module D - Groups, social networks and collective behaviour   |   slug: collective-judgment
+============================================================================================
+QUESTION  : How much better is a majority judgement than an individual judgement, and what does correlation between the judges do to that advantage?
+MECHANISM : A GHZ-style correlated state mixed with a product state; a single parameter moves the group from independent to perfectly correlated.
+CLASSICAL : Condorcet's jury theorem: independent voters with accuracy p give a majority accuracy that rises towards 1 with the group size.
+
+PARAMETERS (every one adjustable from Python: model.run(name=value))
+    num_agents               = 7                      int    [3, 9]
+    individual_accuracy      = 0.7                    float  [0.5, 0.95]
+    correlation              = 0.5                    float  [0.0, 1.0]
+    (executed exactly on the exact backend)
+
+SUMMARY: Majority accuracy 0.787 versus Condorcet 0.874 for the same individual accuracy 0.70 (correlation 0.50).
+
+FINDINGS
+  * Majority accuracy is 0.7870 against an individual accuracy of 0.7000 (advantage +0.087).
+  * With fully independent judges the same group would reach 0.8740, the Condorcet prediction: correlation between the judges is what is missing.
+  * The correlation sweep falls monotonically from the Condorcet value to the individual accuracy, so the wisdom of crowds can be read off as a distance between two numbers.
+  * The distribution of the number of votes in favour has mean 4.90 and variance 5.88, against the independent binomial variance 1.47: correlation is visible as over-dispersion.
+  * With independent judges (correlation 0) the model reproduces Condorcet's 0.8740 exactly, which is the classical limit of this mechanism; a tie counts as no majority for both.
+
+AGAINST THE CLASSICAL BASELINE: Condorcet jury theorem
+    Independent judges with accuracy p: the majority accuracy is the tail of the binomial distribution and rises with the group size.
+    quantity                                           quantum  classical
+    majority accuracy                                    0.787      0.874
+    variance of the vote count                           5.880      1.470
+    -> The classical reference values are shown next to the model's; the difference between the two bars is the model's content, and where they agree the classical account is adequate.
+
+QUANTUM CIRCUIT
+    GHZ preparation of the correlated component: 7 qubits, 0 classical bits, depth 7, 7 operations
+    note: the state 'state' is mixed (a density matrix), so it cannot be prepared as a circuit; the exact backend evaluates it directly
+    note: the correlated component is a GHZ state - the drawing shows how it is prepared - and the model then mixes it with a product state, which is a density matrix and is evaluated exactly
+
+WHAT THIS DOES NOT CLAIM
+  - This is a model of response probabilities, not a claim about what the brain does.
+  - A quantum model only means the data are described by a quantum probability space; classical models may fit equally well, and the classical baseline is reported for that reason.
+  - Correlation is modelled as a GHZ-style state; real groups correlate for many reasons, and the model does not distinguish between them.
+  - A majority means strictly more than half, so an evenly split even-sized group has no majority; the classical baseline uses the same convention.
+
+--------------------------------------------------------------------------------------------
+ADJUST THEM: the same models with different parameters
+--------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------------------
+ADJUSTING IT: Superposition of beliefs versus classical uncertainty
+--------------------------------------------------------------------------------------------
+    decoherence=0.0                                      -> Same marginal, different states: p(Q2=yes) = 1.00 (coherent) versus 0.50 (classical ignorance).
+
+--------------------------------------------------------------------------------------------
+ADJUSTING IT: Semantic ambiguity: context fixes a word's sense
+--------------------------------------------------------------------------------------------
+    context_strength=0.0                                 -> Context shifts the dominant sense by +0.000, and a resolved sense is immune to later context.
+
+--------------------------------------------------------------------------------------------
+ADJUSTING IT: Auctions, competitive bidding and the order of value and bid
+--------------------------------------------------------------------------------------------
+    rival_pressure=0.0                                   -> Bid after a high valuation 0.848 versus 0.076 after a low one; order shift +0.223.
+
+--------------------------------------------------------------------------------------------
+ADJUSTING IT: Collective judgement: the wisdom of crowds and correlation
+--------------------------------------------------------------------------------------------
+    correlation=0.0                                      -> Majority accuracy 0.874 versus Condorcet 0.874 for the same individual accuracy 0.70 (correlation 0.00).
+    correlation=1.0                                      -> Majority accuracy 0.700 versus Condorcet 0.874 for the same individual accuracy 0.70 (correlation 1.00).
+
+29 files written:
+    showcase\figures\superposition-beliefs__probabilities__sequential_check.png
+    showcase\figures\superposition-beliefs__sweep__decoherence.png
+    showcase\figures\superposition-beliefs__state__coherent.png
+    showcase\figures\superposition-beliefs__state__decohered.png
+    showcase\figures\superposition-beliefs__state__ignorance.png
+    showcase\figures\superposition-beliefs__model_versus_classical_baseline.png
+    showcase\figures\superposition-beliefs__circuit__first_then_probe.png
+    showcase\figures\superposition-beliefs__circuit__probe_then_first.png
+    showcase\reports\superposition-beliefs.html
+    showcase\figures\semantic-ambiguity__probabilities__neutral.png
+    showcase\figures\semantic-ambiguity__probabilities__context_first.png
+    showcase\figures\semantic-ambiguity__probabilities__opposite_context_first.png
+    showcase\figures\semantic-ambiguity__probabilities__sense_resolved_first.png
+    showcase\figures\semantic-ambiguity__model_versus_classical_baseline.png
+    showcase\figures\semantic-ambiguity__circuit__sense.png
+    showcase\reports\semantic-ambiguity.html
+    showcase\figures\auctions__probabilities__value_then_bid.png
+    showcase\figures\auctions__probabilities__bid_then_value.png
+    showcase\figures\auctions__probabilities__no_rival_information.png
+    showcase\figures\auctions__model_versus_classical_baseline.png
+    showcase\figures\auctions__circuit__valuation_then_bid.png
+    showcase\figures\auctions__circuit__bid_then_valuation.png
+    showcase\reports\auctions.html
+    showcase\figures\collective-judgment__marginals__votes.png
+    showcase\figures\collective-judgment__sweep__correlation.png
+    showcase\figures\collective-judgment__distribution.png
+    showcase\figures\collective-judgment__model_versus_classical_baseline.png
+    showcase\figures\collective-judgment__circuit__GHZ_preparation_of_the_correlated_component.png
+    showcase\reports\collective-judgment.html
+
+Next: `qcog list` for the catalogue, `qcog run <slug> --param name=value`, `qcog circuit <slug>`, `streamlit run app/streamlit_app.py`.

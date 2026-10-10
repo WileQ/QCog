@@ -242,8 +242,16 @@ def _page(title: str, body: str, description: str = "") -> str:
     )
 
 
-def write_model_report(model, result, out_dir: str | Path, include_figures: bool = True) -> Path:
-    """Write an HTML report for a single run (plus a PNG of every figure)."""
+def write_model_report(
+    model, result, out_dir: str | Path, include_figures: bool = True, save_figures: bool = True
+) -> Path:
+    """Write an HTML report for a single run.
+
+    The report is self-contained: the figures are embedded as images inside the HTML.
+    ``save_figures`` additionally writes each figure as a PNG next to the report, which
+    is useful for slides; set it to ``False`` when the PNGs are already being saved
+    somewhere else.
+    """
     instance = _as_instance(model)
     directory = Path(out_dir)
     directory.mkdir(parents=True, exist_ok=True)
@@ -251,7 +259,7 @@ def write_model_report(model, result, out_dir: str | Path, include_figures: bool
     body = model_html(instance, result, include_figures=include_figures, heading_level=2)
     path = directory / f"{slug}.html"
     path.write_text(_page(result.title, body, result.summary), encoding="utf-8")
-    if include_figures:
+    if include_figures and save_figures:
         try:
             figures = instance.figures(result)
         except Exception:  # pragma: no cover

@@ -317,12 +317,15 @@ src/qcog/
   data/          illustrative datasets with provenance notes
 app/             Streamlit explorer
 examples/        five runnable scripts, from five minutes to the full catalogue
+showcase/        a top-level demo: script + captured output + figures + HTML reports
 tests/           83 tests
 docs/            project page, methodology, accessibility, demo script, submission notes
 ```
 
 ## Documentation
 
+* [`showcase/`](showcase/) - runnable demonstration with its captured output, figures and HTML reports
+  (`python showcase/run_showcase.py`, or `--all` for the whole catalogue).
 * [`docs/project_page.md`](docs/project_page.md) - the project page: what it does, what problem it explores,
   how to run it, how to replicate or extend it.
 * [`docs/methodology.md`](docs/methodology.md) - the mathematics, the conventions, and the statistical tests.
