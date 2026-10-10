@@ -8,12 +8,13 @@ library, so nothing in this directory is imported by `qcog` itself.
 ```bash
 python showcase/run_showcase.py                     # the four models chosen below, exact backend
 python showcase/run_showcase.py --all               # every model in the catalogue
-python showcase/run_showcase.py --models question-order question-order   # any subset
+python showcase/run_showcase.py --models question-order auctions      # any subset
 python showcase/run_showcase.py --param correlation=0 --no-figures      # override parameters
 python showcase/run_showcase.py --reports           # also write an accessible HTML report per model
 ```
 
-No installation is needed: the script adds `src/` to the path itself, so it runs from a plain checkout.
+No installation is needed: the script adds `src/` to the path itself, so it runs from a plain checkout. For a
+cell-by-cell version of the same tour, open [`notebooks/quickstart.ipynb`](../notebooks/quickstart.ipynb).
 
 ## What it prints
 

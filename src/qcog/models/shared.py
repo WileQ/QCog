@@ -137,8 +137,15 @@ class PopulationModel(Model):
             "series": series,
         }
 
-    def classical_trajectory(self, initial: list[float], adjacency, steps: int, kind: str = "de-groot") -> dict:
-        """Classical baseline trajectory (DeGroot averaging or bounded confidence)."""
+    def classical_trajectory(
+        self, initial: list[float], adjacency, steps: int, kind: str = "de-groot", epsilon: float = 0.3
+    ) -> dict:
+        """Classical baseline trajectory (DeGroot averaging or bounded confidence).
+
+        ``epsilon`` is the confidence radius of the bounded-confidence variant: agents
+        only listen to opinions within ``epsilon`` of their own, which is the classical
+        model that also produces clusters.
+        """
         from ..core.classical import bounded_confidence_step, de_groot_step
 
         opinions = np.asarray(initial, dtype=float)
@@ -147,7 +154,9 @@ class PopulationModel(Model):
             if kind == "de-groot":
                 opinions = de_groot_step(opinions, np.asarray(adjacency, dtype=float))
             else:
-                opinions = bounded_confidence_step(opinions, 0.3, np.asarray(adjacency, dtype=float))
+                opinions = bounded_confidence_step(
+                    opinions, float(epsilon), np.asarray(adjacency, dtype=float)
+                )
             for index in range(len(initial)):
                 series[f"agent {index + 1}"].append(float(opinions[index]))
         return {

@@ -20,10 +20,19 @@ what Q-Cog does, and - more usefully - how anyone can verify it.
 
 ## Colour
 
-* The Okabe-Ito colour-blind-safe palette (`qcog.viz.PALETTE`) is used for every figure and the report.
-* No series is identified by colour alone: bars are labelled, differences are printed as signed numbers, and
-  legends are always paired with axis labels or direct text.
+* The colour-blind-safe Okabe-Ito palette (`qcog.viz.PALETTE`) is used for every figure and the report. Eight of
+  its colours form the line/series cycle (`qcog.viz.CATEGORICAL`); the pale yellow is kept for areas and
+  annotations because a pale line on a white page is not readable.
+* **Series differ by more than hue.** `qcog.viz.series_style(index)` returns a colour *and* a linestyle *and* a
+  marker, cycling colour first, then linestyle, then marker - so up to 8 x 4 x 8 series stay distinguishable, and
+  two series never differ only by colour. Bar charts use hatches for the same reason, and the classical-comparison
+  chart draws the baseline as a hatched outline and the model as a solid bar, so the pair reads in greyscale.
+* No series is identified by colour alone: bars are labelled with their values, differences are printed as signed
+  numbers, and legends are always paired with axis labels or direct text.
 * A high-contrast mode is one checkbox away in the explorer (black background, white text, underlined links).
+* Matplotlib is put in the headless `Agg` backend only when the library is *not* running inside a notebook or
+  another interactive session, so charts render inline for a Jupyter user (see `notebooks/quickstart.ipynb`) and
+  still work in scripts, servers and report generation.
 
 ## Text alternatives
 
@@ -57,6 +66,12 @@ An example of what a description looks like:
   widget labels, CLI help and documentation text - one declaration, three surfaces.
 * Caveats are written as complete sentences about what the model does *not* claim.
 
+## Charts in a notebook
+
+`notebooks/quickstart.ipynb` is the accessible-by-example tour: it prints the classical comparison as a table
+*and* shows the chart with its description underneath, draws the circuit with an adjustable style, and saves a
+report. The notebook's cells are executed by the test suite from top to bottom, so it cannot rot.
+
 ## Verifying it
 
 ```bash
@@ -76,7 +91,10 @@ PY
 ```
 
 Automated checks are also part of the test suite (`tests/test_cli_and_report.py::test_model_report_is_accessible`),
-so a regression that removes the skip link, the alt text or the captions fails the build.
+so a regression that removes the skip link, the alt text or the captions fails the build. Two further checks cover
+the charts themselves: `python scripts/check_figures.py` renders every figure function and every model's figures
+and fails if one is broken or lacks its description, and `tests/test_circuits_and_comparison.py` asserts that
+series styles stay distinguishable and that the comparison chart separates its two series by a hatch.
 
 ## Known limits
 

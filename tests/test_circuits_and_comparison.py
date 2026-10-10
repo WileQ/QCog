@@ -197,6 +197,84 @@ def test_figures_include_the_comparison_and_the_circuit(runs):
         assert len(getattr(figure, "_qcog_description", "")) > 30, name
 
 
+# ------------------------------------------------------------- visualizations
+def test_every_figure_function_renders_with_a_description():
+    """Every chart type the library can draw, on synthetic input."""
+    from qcog.viz import standalone_checks
+
+    rows = standalone_checks()
+    failures = [row for row in rows if not row["ok"]]
+    assert not failures, failures
+    assert len(rows) >= 11
+
+
+def test_every_model_figure_renders_with_a_description():
+    """Every figure of every model, with the sweeps on: nothing may break or lose its text."""
+    from qcog.viz import catalogue_checks
+
+    rows = catalogue_checks(sweeps=True)
+    failures = [row for row in rows if not row["ok"]]
+    assert not failures, failures
+    total = sum(int(row["detail"].split()[0]) for row in rows)
+    assert total > 100, total
+
+
+def test_catalogue_figures_include_the_comparison_and_a_circuit_for_every_model():
+    from qcog.registry import MODELS
+
+    for slug, model_class in MODELS.items():
+        model = model_class()
+        result = model.run(sweeps=False)
+        names = list(model.figures(result))
+        assert any(name == "model versus classical baseline" for name in names), slug
+        assert any(name.startswith("circuit: ") for name in names), slug
+
+
+def test_colours_are_distinct_where_it_matters():
+    """Series must differ by more than hue, so a figure survives greyscale and colour blindness."""
+    from qcog.viz import CATEGORICAL, series_style
+
+    assert len(CATEGORICAL) >= 8
+    pairs = [(series_style(index)["color"], series_style(index)["linestyle"]) for index in range(24)]
+    assert len(set(pairs)) == 24
+    # the first eight series differ in colour alone
+    assert len({series_style(index)["color"] for index in range(8)}) == 8
+    # and the comparison chart separates its two series by a hatch as well as by colour
+    from qcog.viz import classical_comparison_figure
+
+    figure = classical_comparison_figure(
+        [{"metric": "order effect", "model": 0.3, "baseline": 0.0, "note": ""}]
+    )
+    hatches = {patch.get_hatch() for patch in figure.axes[0].patches}
+    assert None in hatches and any(hatch for hatch in hatches)
+
+
+def test_circuit_images_are_adjustable(tmp_path):
+    """An image of a circuit must be as configurable as anything else."""
+    from qcog.registry import get_model
+
+    model = get_model("quantum-prisoners-dilemma")
+    result = model.run(sweeps=False)
+    # style, scale and folding are passed to the drawer
+    for style in ("default", "bw", "iqp"):
+        figure = model.circuit_image(result, style=style, scale=0.7, fold=20)
+        assert "Circuit" in getattr(figure, "_cqog_description" if False else "_qcog_description")
+    # one named design, written as png and as svg
+    png = model.circuit_image(result, name="entangling game circuit", path=tmp_path / "game.png")
+    svg = model.circuit_image(result, name="entangling game circuit", path=tmp_path / "game.svg")
+    assert (tmp_path / "game.png").exists() and (tmp_path / "game.svg").exists()
+    assert png is not None and svg is not None
+    # every design at once, into a directory, in a chosen format
+    written = model.circuit_images(result, directory=tmp_path, style="bw", format="pdf")
+    assert written and all(not isinstance(value, (int, str)) for value in written.values())
+    assert list(tmp_path.glob("*.pdf"))
+    # the run-level option is honoured by the figure set as well
+    quiet = model.run(sweeps=False, circuits=False)
+    assert not [name for name in model.figures(quiet) if name.startswith("circuit: ")]
+    styled = model.run(sweeps=False, circuit_style="bw", circuit_scale=0.6)
+    assert styled.metadata["circuit_options"]["style"] == "bw"
+
+
 # --------------------------------------------------- numerical fast paths
 def test_fast_partial_swap_matches_the_dense_construction():
     rng = np.random.default_rng(3)

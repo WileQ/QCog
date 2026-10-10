@@ -35,7 +35,13 @@ MODULES = {
 }
 
 #: Keyword arguments that configure execution rather than the model itself.
-RESERVED = ("backend", "shots", "seed", "noise", "engine", "sweeps")
+RESERVED = (
+    "backend", "shots", "seed", "noise", "engine", "sweeps",
+    # the classical comparison is as adjustable as any model parameter
+    "classical", "classical_options",
+    # so is the circuit drawing
+    "circuits", "circuit_style", "circuit_scale", "circuit_fold",
+)
 
 
 @dataclass
@@ -137,6 +143,9 @@ def make_engine(
 # for all twenty-three models without twenty-three copies of the same code.
 # --------------------------------------------------------------------------- #
 
+#: Options every model honours, whatever its baseline: which comparison rows to keep.
+CLASSICAL_UNIVERSAL_OPTIONS = ("rows", "max_rows")
+
 #: Dictionaries whose entries are alternative phrasings of one question rather than
 #: a sequence of questions (used when deciding what a circuit should draw).
 _VARIANT_DICTIONARIES = ("features", "pairwise", "questions_by_name")
@@ -214,6 +223,65 @@ class CircuitAndComparisonMixin:
     def circuit_notes(self, result) -> list[str]:
         """Why some parts of the design have no circuit drawing."""
         return self._circuit_scan(result)[1]
+
+    def circuit_images(self, result, name: str | None = None, directory=None, **options) -> dict:
+        """Draw this model's circuits, with the image itself adjustable.
+
+        ``name`` picks one design (by default every design is drawn).  ``directory``
+        writes the images there.  The remaining keyword arguments are passed to
+        :func:`qcog.viz.circuit_figure`: ``style``, ``scale``, ``fold``,
+        ``initial_state``, ``format`` (``png``, ``svg``, ``pdf``), ``dpi``.  Options not
+        given fall back to whatever was recorded by :meth:`Model.run`
+        (``circuit_style``, ``circuit_scale``, ``circuit_fold``).
+        """
+        from ..viz.figures import circuit_figure
+
+        recorded = result.metadata.get("circuit_options", {}) if isinstance(result.metadata, dict) else {}
+        settings = {
+            "style": options.pop("style", recorded.get("style", "default")),
+            "scale": options.pop("scale", recorded.get("scale", 0.85)),
+            "fold": options.pop("fold", recorded.get("fold", 28)),
+        }
+        settings.update(options)
+        suffix = settings.pop("format", "png")
+        designs = self.circuit_designs(result)
+        if name is not None:
+            if name not in designs:
+                raise KeyError(f"no circuit named {name!r}; available: {sorted(designs)}")
+            designs = {name: designs[name]}
+        figures: dict = {}
+        for label, design in designs.items():
+            filename = None
+            if directory is not None:
+                from pathlib import Path
+
+                safe = "".join(character if character.isalnum() else "_" for character in label)[:56]
+                path = Path(directory)
+                path.mkdir(parents=True, exist_ok=True)
+                filename = path / f"{self.slug}__{safe}.{suffix}"
+            figures[label] = circuit_figure(design, title=label, filename=filename, **settings)
+        return figures
+
+    def circuit_image(self, result, name: str | None = None, path=None, **options):
+        """One circuit image, optionally written to ``path`` (suffix chooses the format)."""
+        from ..viz.figures import circuit_figure
+
+        recorded = result.metadata.get("circuit_options", {}) if isinstance(result.metadata, dict) else {}
+        settings = {
+            "style": options.pop("style", recorded.get("style", "default")),
+            "scale": options.pop("scale", recorded.get("scale", 0.85)),
+            "fold": options.pop("fold", recorded.get("fold", 28)),
+        }
+        settings.update(options)
+        designs = self.circuit_designs(result)
+        if not designs:
+            raise ValueError(
+                "this model has no circuit for these parameters: " + "; ".join(self.circuit_notes(result))
+            )
+        label = name or next(iter(designs))
+        if label not in designs:
+            raise KeyError(f"no circuit named {label!r}; available: {sorted(designs)}")
+        return circuit_figure(designs[label], title=label, filename=path, **settings)
 
     def extra_circuit_designs(self, result) -> dict:
         """Circuits a model wants to add beyond the generic scan (default: none).
@@ -384,7 +452,12 @@ class CircuitAndComparisonMixin:
         return dict(list(designs.items())[:MAX_CIRCUIT_VIEWS]), notes
 
     # ---------------------------------------------------------------- comparison
-    def classical_summary(self, result) -> dict:
+    #: Options the classical baseline of this model honours (see
+    #: :meth:`comparison_rows`).  Anything else passed in ``classical_options`` is
+    #: recorded as ignored rather than silently dropped.
+    classical_option_names: tuple[str, ...] = ()
+
+    def classical_summary(self, result, options: dict | None = None, enabled: bool = True) -> dict:
         """The model-versus-classical comparison: rows, baseline name and a verdict.
 
         The numbers come from what the model already computed, so this cannot drift
@@ -394,11 +467,36 @@ class CircuitAndComparisonMixin:
         interference contribution, a conjunction excess - the baseline value is
         exactly zero, which is why the chart is informative rather than decorative.
         """
-        rows = self.comparison_rows(result)
+        options = dict(options or {})
+        if not enabled:
+            embedded = result.analysis.get("classical")
+            return {
+                "name": (embedded or {}).get("name", self.classical_baseline) if isinstance(embedded, dict)
+                else self.classical_baseline,
+                "description": (embedded or {}).get("description", "") if isinstance(embedded, dict) else "",
+                "rows": [],
+                "options": {},
+                "options_honoured": [],
+                "options_ignored": sorted(options),
+                "verdict": (
+                    "the classical comparison was switched off for this run (classical=False); pass "
+                    "classical=True to see what a classical account of the same situation predicts"
+                ),
+            }
+        rows = self.comparison_rows(result, options)
         analysis = result.analysis
         embedded = analysis.get("classical") if isinstance(analysis.get("classical"), dict) else {}
         name = embedded.get("name") or self.classical_baseline or "classical baseline"
         description = embedded.get("description") or self.classical_baseline
+        honoured = sorted(set(options) & (set(self.classical_option_names) | set(CLASSICAL_UNIVERSAL_OPTIONS)))
+        ignored = sorted(set(options) - set(self.classical_option_names) - set(CLASSICAL_UNIVERSAL_OPTIONS))
+        selected = options.get("rows")
+        if selected:
+            wanted = [str(item).lower() for item in selected]
+            rows = [row for row in rows if any(item in row["metric"].lower() for item in wanted)]
+        limit = options.get("max_rows")
+        if limit:
+            rows = rows[: int(limit)]
         zero_rows = [row for row in rows if row.get("baseline") == 0.0]
         if rows and len(zero_rows) == len(rows):
             verdict = (
@@ -415,18 +513,39 @@ class CircuitAndComparisonMixin:
                 "This model's classical comparison is reported in its findings and tables rather than as a "
                 "single pair of numbers."
             )
+        baseline_options = sorted(set(honoured) - set(CLASSICAL_UNIVERSAL_OPTIONS))
+        row_options = sorted(set(honoured) & set(CLASSICAL_UNIVERSAL_OPTIONS))
+        if baseline_options:
+            verdict += f"  The classical baseline was evaluated with {', '.join(baseline_options)}."
+        if row_options:
+            verdict += (
+                f"  Showing {len(rows)} of the model's comparison rows ({', '.join(row_options)})."
+            )
+        if ignored:
+            verdict += (
+                "  This model's baseline is a structural constraint with no free parameters, so "
+                f"{', '.join(ignored)} had no effect."
+            )
         return {
             "name": name,
             "description": description,
             "rows": rows,
+            "options": options,
+            "options_honoured": honoured,
+            "options_ignored": ignored,
             "verdict": verdict,
         }
 
-    def comparison_rows(self, result) -> list[dict]:
+    def comparison_rows(self, result, options: dict | None = None) -> list[dict]:
         """Numeric model-versus-classical rows for this model.
 
         Implemented generically over the analysis dictionaries the models produce, and
-        overridable by a model that can make a sharper comparison.
+        overridable by a model that can make a sharper comparison *or* whose classical
+        baseline has adjustable parameters.  ``options`` carries the
+        ``classical_options`` a caller passed to :meth:`Model.run`; the base
+        implementation ignores them, and a model that honours some declares them in
+        :attr:`classical_option_names` (anything else is reported as ignored rather than
+        silently dropped).
         """
         analysis = result.analysis
         rows: list[dict] = []
@@ -831,7 +950,17 @@ class Model(CircuitAndComparisonMixin, ABC):
         notes = self.circuit_notes(result)
         if notes:
             result.metadata["circuit_notes"] = notes
-        result.classical = self.classical_summary(result)
+        result.metadata["circuit_options"] = {
+            "enabled": bool(engine_kwargs.get("circuits", True)),
+            "style": engine_kwargs.get("circuit_style", "default"),
+            "scale": float(engine_kwargs.get("circuit_scale", 0.85)),
+            "fold": int(engine_kwargs.get("circuit_fold", 28)),
+        }
+        result.classical = self.classical_summary(
+            result,
+            options=engine_kwargs.get("classical_options") or {},
+            enabled=bool(engine_kwargs.get("classical", True)),
+        )
         return result
 
     # ------------------------------------------------------------ subclass hooks
@@ -873,14 +1002,17 @@ class Model(CircuitAndComparisonMixin, ABC):
         figures = default_figures(self, result)
         rows = result.classical_comparison
         if rows:
-            figures["model versus classical baseline"] = classical_comparison_figure(
-                rows, result.self_title if hasattr(result, "self_title") else result.title
-            )
-        for name, design in self.circuit_designs(result).items():
-            try:
-                figures[f"circuit: {name}"] = circuit_figure(design, title=name)
-            except Exception:  # pragma: no cover - a drawing failure must not break a run
-                continue
+            figures["model versus classical baseline"] = classical_comparison_figure(rows, result.title)
+        recorded = result.metadata.get("circuit_options", {}) if isinstance(result.metadata, dict) else {}
+        if recorded.get("enabled", True):
+            for name, design in self.circuit_designs(result).items():
+                try:
+                    figures[f"circuit: {name}"] = circuit_figure(
+                        design, title=name, style=recorded.get("style", "default"),
+                        scale=recorded.get("scale", 0.85), fold=recorded.get("fold", 28),
+                    )
+                except Exception:  # pragma: no cover - a drawing failure must not break a run
+                    continue
         return figures
 
     def text_alternatives(self, result: ModelResult) -> dict[str, str]:

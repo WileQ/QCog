@@ -184,6 +184,41 @@ class QuantumOpinionDynamics(PopulationModel):
         }
         return analysis, findings, summary
 
+    #: The classical baseline here is a bounded-confidence run, so its radius and kind
+    #: are adjustable through ``classical_options``.
+    classical_option_names = ("epsilon", "kind")
+
+    def comparison_rows(self, result, options=None):
+        """Comparison rows, with the classical aggregation adjustable.
+
+        ``classical_options={"epsilon": 0.5}`` changes the confidence radius of the
+        bounded-confidence baseline; ``{"kind": "de-groot"}`` switches it to plain
+        neighbour averaging. The columns are recomputed rather than relabelled, so the
+        figure always shows the baseline that was actually used.
+        """
+        rows = super().comparison_rows(result, options)
+        options = dict(options or {})
+        if not (set(options) & set(self.classical_option_names)):
+            return rows
+        context = self.build(**result.parameters)
+        kind = str(options.get("kind", "bounded-confidence"))
+        epsilon = float(options.get("epsilon", 0.3))
+        classical = self.classical_trajectory(
+            [opinion_from_angle(angle) for angle in context["opinions"]],
+            context["model"].adjacency,
+            len(result.analysis["trajectory"]["x"]) - 1,
+            kind="de-groot" if kind == "de-groot" else "bounded-confidence",
+            epsilon=epsilon,
+        )
+        finals = [values[-1] for values in classical["series"].values()]
+        for row in rows:
+            if row["metric"] == "polarisation at the end":
+                row["baseline"] = round(float(np.std(finals)), 6)
+            elif row["metric"] == "agreement (absolute mean opinion)":
+                row["baseline"] = round(abs(float(np.mean(finals))), 6)
+            row["note"] = row["note"] + f" (kind={kind}, epsilon={epsilon})"
+        return rows
+
     def context_metadata(self, context: dict) -> dict:
         parameters = context["parameters"]
         agents = int(parameters["num_agents"])
@@ -367,6 +402,40 @@ class Polarization(PopulationModel):
             },
         }
         return analysis, findings, summary
+
+    classical_option_names = ("epsilon", "kind")
+
+    def comparison_rows(self, result, options=None):
+        """Comparison rows, with the bounded-confidence baseline adjustable (see the
+        opinion-dynamics model for the meaning of ``epsilon`` and ``kind``)."""
+        rows = super().comparison_rows(result, options)
+        options = dict(options or {})
+        if not (set(options) & set(self.classical_option_names)):
+            return rows
+        context = self.build(**result.parameters)
+        kind = str(options.get("kind", "bounded-confidence"))
+        epsilon = float(options.get("epsilon", 0.3))
+        bounded = np.asarray([opinion_from_angle(angle) for angle in context["opinions"]], dtype=float)
+        history = [bounded.copy()]
+        for _ in range(len(result.analysis["trajectory"]["x"]) - 1):
+            if kind == "de-groot":
+                from ..core.classical import de_groot_step
+
+                bounded = de_groot_step(bounded, np.asarray(context["adjacency"], dtype=float))
+            else:
+                from ..core.classical import bounded_confidence_step
+
+                bounded = bounded_confidence_step(bounded, epsilon, np.asarray(context["adjacency"], dtype=float))
+            history.append(bounded.copy())
+        finals = [float(column[-1]) for column in np.asarray(history).T]
+        for row in rows:
+            if row["metric"] == "gap between the communities":
+                half = context["half"]
+                row["baseline"] = round(abs(np.mean(finals[half:]) - np.mean(finals[:half])), 6)
+            elif row["metric"] == "polarisation at the end":
+                row["baseline"] = round(float(np.std(finals)), 6)
+            row["note"] = row["note"] + f" (kind={kind}, epsilon={epsilon})"
+        return rows
 
     def context_metadata(self, context: dict) -> dict:
         return {
@@ -571,6 +640,37 @@ class CollectiveJudgment(PopulationModel):
             "the correlated component is a GHZ state - the drawing shows how it is prepared - and the model "
             "then mixes it with a product state, which is a density matrix and is evaluated exactly"
         ]
+
+    #: The classical baseline is Condorcet's theorem, whose judge accuracy is a free
+    #: parameter: ``classical_options={"accuracy": 0.8}``.
+    classical_option_names = ("accuracy",)
+
+    def comparison_rows(self, result, options=None):
+        """Comparison rows with an adjustable classical accuracy.
+
+        The model's own majority accuracy comes from its state; the baseline is
+        Condorcet's value for the *same* individual accuracy, unless the caller asks for a
+        different one through ``classical_options={"accuracy": ...}`` - which is how a
+        reader can ask "would a classical group have done better or worse than this one,
+        judge for judge?".
+        """
+        rows = super().comparison_rows(result, options)
+        options = dict(options or {})
+        if "accuracy" not in options:
+            return rows
+        accuracy = float(options["accuracy"])
+        from ..core.classical import condorcet_jury_probability
+
+        judges = int(result.parameters["num_agents"])
+        target = condorcet_jury_probability(accuracy, judges)
+        for row in rows:
+            if row["metric"] == "majority accuracy":
+                row["baseline"] = round(float(target), 6)
+                row["note"] = row["note"] + f" (classical judges at accuracy {accuracy:.2f})"
+            elif row["metric"] == "variance of the vote count":
+                row["baseline"] = round(float(judges * accuracy * (1 - accuracy)), 6)
+                row["note"] = row["note"] + f" (classical judges at accuracy {accuracy:.2f})"
+        return rows
 
     def context_metadata(self, context: dict) -> dict:
         return {"num_agents": len(context["votes"])}
@@ -787,6 +887,25 @@ class InformationCascades(Model):
             },
         }
         return analysis, findings, summary_text
+
+    #: The classical baseline is rational Bayesian learning, whose signal accuracy is a
+    #: free parameter: ``classical_options={"signal_accuracy": 0.8}``.
+    classical_option_names = ("signal_accuracy",)
+
+    def comparison_rows(self, result, options=None):
+        """Comparison rows with an adjustable classical signal accuracy."""
+        rows = super().comparison_rows(result, options)
+        options = dict(options or {})
+        if "signal_accuracy" not in options:
+            return rows
+        accuracy = float(options["signal_accuracy"])
+        decisions = [entry["decision"] for entry in result.analysis.get("decisions", [])]
+        posterior = bayesian_cascade(accuracy, decisions, "adopt")["posterior"]
+        for row in rows:
+            if row["metric"] == "adoption share":
+                row["baseline"] = round(float(posterior), 6)
+                row["note"] = row["note"] + f" (classical signal accuracy {accuracy:.2f})"
+        return rows
 
     def context_metadata(self, context: dict) -> dict:
         return {"signal_angle": round(context["signal_angle"], 4)}

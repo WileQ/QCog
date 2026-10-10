@@ -6,7 +6,7 @@ Thanks for considering it. This project is deliberately built so that contributi
 
 ```bash
 python -m pip install -e ".[app,dev]"
-python -m pytest -q            # 83 tests, about one minute
+python -m pytest -q            # 120 tests, about one minute
 qcog evidence                  # what the library checks about itself
 ```
 
@@ -32,14 +32,32 @@ establish. The test `test_catalogue_is_complete_and_well_formed` enforces this.
    `note`. The default implementation already covers the analysis dictionaries in the catalogue (order effects,
    interference, conjunction bounds, entanglements, game payoffs, network statistics, Condorcet, cascades,
    plurality ...), so most models need nothing; override it when a sharper pair of numbers exists.
+   If your baseline has knobs of its own, declare them in `classical_option_names` and honour them in
+   `comparison_rows(result, options)` (recompute the rows rather than relabelling them); anything you cannot honour
+   is reported as ignored, which is better than silently dropping it.
+
 2. **A circuit view, or a reason.** `circuit_designs(result)` returns named Qiskit circuits. The library scans
    the model's own `build` output for a state and the questions that act on it, draws both orders of a
    two-question design, uses the entangling circuit for a game, falls back to the sharp limit of an unsharp
    question, and reports in `circuit_notes(result)` why nothing was drawn (a mixed state, an unsharp question
    with no sharp counterpart). Add `extra_circuit_designs(result)` for a mechanism the scan cannot see.
 
-Tests in `tests/test_circuits_and_comparison.py` enforce both, and that every parameter of every model can be
-changed from Python.
+Tests in `tests/test_circuits_and_comparison.py` enforce both, along with every parameter of every model being
+changeable from Python, the circuit image options (`style`, `scale`, `fold`, `format`, `circuit_image(...)`),
+and the requirement that series styles stay distinguishable.
+
+## Before you finish
+
+```bash
+python -m pytest -q                     # the suite, including the notebook and the docs checks
+python scripts/check_figures.py         # every visualization renders, with its description
+python scripts/check_docs.py            # the documentation matches the code
+python scripts/generate_docs.py         # regenerate docs/models.generated.md
+```
+
+`check_figures.py` is the one to run when you add or change a chart: it builds every figure function on synthetic
+input *and* every model's figure set, writes them out if you pass `--out`, and exits non-zero if something is
+broken or has lost its accessible description.
 
 ## House rules
 

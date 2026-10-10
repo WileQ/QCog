@@ -5,7 +5,8 @@ Commands
 ``qcog list``              every model, grouped by module
 ``qcog info SLUG``         one model's documentation
 ``qcog run SLUG``          run a model, with ``--param value`` overrides
-``qcog circuit SLUG``      draw the model's quantum circuit (text, plus PNGs on request)
+``qcog circuit SLUG``      draw the model's quantum circuit (text, plus images on request;
+                           --which, --style, --scale, --fold, --format, --out)
 ``qcog sweep SLUG``        print the model's own sweeps as tables
 ``qcog fit SLUG DATA``     fit a model to observed frequencies (CSV or JSON)
 ``qcog report``            a full accessible HTML report of every model
@@ -53,11 +54,26 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--param", nargs="*", default=[], help="parameter overrides as name=value")
     run.add_argument("--save", default=None, help="directory for an HTML report of this run")
     run.add_argument("--fast", action="store_true", help="skip the parameter sweeps (headline numbers only)")
+    run.add_argument("--no-classical", action="store_true",
+                     help="skip the model-versus-classical comparison")
+    run.add_argument("--classical-option", action="append", default=[], metavar="NAME=VALUE",
+                     help="adjust the classical baseline (rows=..., max_rows=..., accuracy=..., epsilon=..., "
+                          "kind=..., signal_accuracy=...); repeatable")
+    run.add_argument("--no-circuits", action="store_true", help="do not draw the circuit figures")
+    run.add_argument("--circuit-style", default="default", help="circuit drawing style: default, iqp, clifford, bw")
+    run.add_argument("--circuit-scale", type=float, default=0.85, help="circuit drawing scale (gate size)")
+    run.add_argument("--circuit-fold", type=int, default=28, help="gates per line before the drawing wraps")
 
     circuit = sub.add_parser("circuit", help="draw the quantum circuit of a model")
     circuit.add_argument("slug")
     circuit.add_argument("--param", nargs="*", default=[])
-    circuit.add_argument("--out", default=None, help="directory to write PNG files into")
+    circuit.add_argument("--out", default=None, help="directory to write image files into")
+    circuit.add_argument("--which", default=None, help="draw only this design (see the listing)")
+    circuit.add_argument("--all", action="store_true", help="draw every design (default)")
+    circuit.add_argument("--format", default="png", choices=("png", "svg", "pdf"), help="image format")
+    circuit.add_argument("--style", default="default", help="drawing style: default, iqp, clifford, bw")
+    circuit.add_argument("--scale", type=float, default=0.85, help="gate size")
+    circuit.add_argument("--fold", type=int, default=28, help="gates per line before the drawing wraps")
 
     sweep = sub.add_parser("sweep", help="print the sweeps of a model")
     sweep.add_argument("slug")
@@ -117,11 +133,19 @@ def cmd_info(slug: str) -> int:
 
 
 def cmd_run(slug: str, backend: str, shots: int | None, seed: int | None, fmt: str,
-            overrides: list[str], save: str | None, fast: bool = False) -> int:
+            overrides: list[str], save: str | None, fast: bool = False,
+            classical: bool = True, classical_options: list[str] | None = None,
+            circuits: bool = True, circuit_style: str = "default",
+            circuit_scale: float = 0.85, circuit_fold: int = 28) -> int:
     """Run a model and print or save its results."""
     model = MODELS[slug]()
     values = _parse_overrides(overrides)
-    result = model.run(backend=backend, shots=shots, seed=seed, sweeps=not fast, **values)
+    baseline_options = _parse_overrides(classical_options or [])
+    result = model.run(
+        backend=backend, shots=shots, seed=seed, sweeps=not fast, classical=classical,
+        classical_options=baseline_options, circuits=circuits, circuit_style=circuit_style,
+        circuit_scale=circuit_scale, circuit_fold=circuit_fold, **values,
+    )
     if fmt == "json":
         _print(json.dumps(result.to_dict(), indent=2, default=str))
     else:
@@ -140,6 +164,8 @@ def cmd_run(slug: str, backend: str, shots: int | None, seed: int | None, fmt: s
             for row in rows:
                 _print(f"  {row['metric'][:52]:52s} {row['model']:9.3f} {row['baseline']:10.3f}")
             _print(f"  {result.classical['verdict']}")
+        elif not classical:
+            _print("\nThe classical comparison is switched off for this run (--no-classical).")
         designs = model.circuit_designs(result)
         if designs:
             _print("\nQuantum circuit(s): " + ", ".join(designs))
@@ -160,7 +186,9 @@ def cmd_run(slug: str, backend: str, shots: int | None, seed: int | None, fmt: s
     return 0
 
 
-def cmd_circuit(slug: str, overrides: list[str], out: str | None) -> int:
+def cmd_circuit(slug: str, overrides: list[str], out: str | None, which: str | None = None,
+                style: str = "default", scale: float = 0.85, fold: int = 28,
+                suffix: str = "png") -> int:
     """Describe (and optionally draw) the circuits of a model."""
     from .circuits.builder import circuit_statistics, circuit_text_alternative
 
@@ -168,6 +196,11 @@ def cmd_circuit(slug: str, overrides: list[str], out: str | None) -> int:
     values = _parse_overrides(overrides)
     result = model.run(sweeps=False, **values)
     designs = model.circuit_designs(result)
+    if which is not None:
+        if which not in designs:
+            _print(f"{slug} has no circuit named {which!r}. Available: {sorted(designs) or 'none'}")
+            return 1
+        designs = {which: designs[which]}
     if not designs:
         _print(f"{slug} has no state-vector circuit for these parameters:")
         for note in model.circuit_notes(result):
@@ -182,15 +215,10 @@ def cmd_circuit(slug: str, overrides: list[str], out: str | None) -> int:
     for note in model.circuit_notes(result):
         _print(f"note: {note}")
     if out:
-        from .viz import circuit_figure, savefig
-
-        directory = Path(out)
-        directory.mkdir(parents=True, exist_ok=True)
-        for name, design in designs.items():
-            safe = "".join(character if character.isalnum() else "_" for character in name)[:40]
-            path = directory / f"{slug}_{safe}.png"
-            savefig(circuit_figure(design, title=name), path)
-            _print(f"wrote {path}")
+        written = model.circuit_images(result, directory=out, style=style, scale=scale, fold=fold,
+                                       format=suffix)
+        for name in written:
+            _print(f"wrote {name} -> {out}")
     return 0
 
 
@@ -294,10 +322,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "run":
         return cmd_run(
             args.slug, args.backend, args.shots, args.seed, args.format, args.param, args.save,
-            getattr(args, "fast", False),
+            getattr(args, "fast", False), not args.no_classical, args.classical_option,
+            not args.no_circuits, args.circuit_style, args.circuit_scale, args.circuit_fold,
         )
     if args.command == "circuit":
-        return cmd_circuit(args.slug, args.param, args.out)
+        return cmd_circuit(args.slug, args.param, args.out, args.which, args.style, args.scale,
+                           args.fold, args.format)
     if args.command == "sweep":
         return cmd_sweep(args.slug, args.param)
     if args.command == "fit":

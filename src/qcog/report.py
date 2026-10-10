@@ -123,6 +123,11 @@ def _figure_html(name: str, figure, description: str) -> str:
     buffer = io.BytesIO()
     figure.savefig(buffer, format="png", bbox_inches="tight")
     encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
+    # the report embeds the image, so the figure object is released immediately:
+    # generating the whole catalogue otherwise keeps a hundred and fifty figures alive
+    import matplotlib.pyplot as plt
+
+    plt.close(figure)
     long_description = " ".join(getattr(figure, "_qcog_extra", []) or [])
     body = f'<p>{_esc(long_description)}</p>' if long_description else ""
     return (
@@ -267,6 +272,9 @@ def write_model_report(
         for name, figure in figures.items():
             safe = "".join(character if character.isalnum() else "_" for character in name)[:60]
             savefig(figure, directory / f"{slug}_{safe}.png")
+            import matplotlib.pyplot as plt
+
+            plt.close(figure)
     return path
 
 

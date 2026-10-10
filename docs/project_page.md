@@ -36,7 +36,8 @@ Every model can be driven and reconfigured from Python, and every run reports:
   comparison (a table in the CLI, the explorer and the report, and a bar chart in every figure set);
 * an **interference decomposition** wherever it applies (classical term plus interference term);
 * the order-effect measures, including the parameter-free **QQ equality** for two dichotomous questions;
-* a drawing of the **quantum circuit** wherever the model has one - both orders of a two-question design, the
+* a drawing of the **quantum circuit** wherever the model has one (the image itself is adjustable: style, scale,
+  folding, format) - both orders of a two-question design, the
   entangling circuit for the games, the sharp limit of an unsharp question, the GHZ preparation for the
   correlated crowd - each carrying a plain-language description, and a written explanation when a drawing is
   impossible (a mixed state, for example);
@@ -68,7 +69,7 @@ Python 3.10+, `qiskit>=2.0`, `qiskit-aer`, `numpy`, `scipy`, `pandas`, `matplotl
 ### Install and run
 
 ```bash
-python -m pip install -e ".[app,dev]"
+python -m pip install -e ".[app,dev]"      # or run from the checkout: the notebook adds src/ itself
 
 qcog list                       # the catalogue
 qcog run question-order         # run the flagship model and read its findings
@@ -76,9 +77,11 @@ qcog evidence                   # the self-check table (about a minute)
 qcog report --out out/qcog_report.html --markdown
 streamlit run app/streamlit_app.py
 python examples/01_first_steps.py
+python showcase/run_showcase.py               # a scripted tour with captured output and figures
 
 qcog circuit quantum-prisoners-dilemma        # draw the model's circuit
 qcog run question-order --fast                # headline numbers without the sweeps
+qcog run collective-judgment --classical-option accuracy=0.8   # adjust the classical baseline
 ```
 
 ### Driving a model from Python
@@ -88,6 +91,16 @@ once and reused by the CLI, the explorer, the fitting layer and the documentatio
 describes them; `model.defaults()` prints them; `model.run(**parameters)` applies them. The test suite runs each
 model with every parameter at both of its bounds (or at every choice) and checks that the results stay
 normalised, so "adjustable in Python" is a tested property rather than a claim.
+
+### Guided tours
+
+* **`notebooks/quickstart.ipynb`** - a short, simple notebook: run a model, change a parameter, read the
+  classical comparison, draw the circuit, sample it on a simulator, save a report. Its cells are executed by the
+  test suite, so it always runs.
+* **`showcase/`** - the same ideas as a script, with its captured output, every figure and an HTML report per
+  model.
+* **`app/streamlit_app.py`** - the interactive explorer, generated from each model's parameter schema, with
+  dark, larger-type, high-contrast and text-only modes.
 
 ### The shortest complete example
 
@@ -113,7 +126,7 @@ print(qq_equality(forward, backward, "A", "B").summary())
 Everything needed to reproduce every number in this project is in the repository, and the checks are
 executable:
 
-* `python -m pytest -q` runs 83 tests covering states, questions, channels, backends, analysis, classical
+* `python -m pytest -q` runs 120 tests covering states, questions, channels, backends, analysis, classical
   baselines, fitting, the CLI, the reports, the figures and every model's central claim.
 * `qcog evidence` prints the evidence table: the interference decomposition, the QQ equality, the classical
   limits, the circuit-versus-analytic parity, the game-theory checks, the entanglement calibration, and a run of

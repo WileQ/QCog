@@ -31,6 +31,10 @@
 | `probe_angle` | float | 1.5707963267948966 | 0.0 to 3.141592653589793 | yes | Angle of the second question; pi/2 makes it maximally incompatible with the first. |
 | `decoherence` | float | 0.15 | 0.0 to 1.0 | no | Depolarising probability applied to the coherent state (0 = pristine, 1 = fully mixed). |
 
+**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline is a structural constraint with no parameters of its own.
+
+**Circuit view.** A drawing is produced wherever one exists (built from the model's own design); `circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and `circuit_image(result, name=..., path=...)` writes it in any format.
+
 **What it does not claim.**
 
 - This is a model of response probabilities, not a claim about what the brain does.
@@ -67,6 +71,10 @@ qcog info superposition-beliefs
 | `sharpness` | float | 1.0 | 0.0 to 1.0 | no | 1 = projective question, 0 = an uninformative question (the classical limit). |
 | `decoherence` | float | 0.0 | 0.0 to 1.0 | no | Depolarising probability applied after each question, modelling forgetting or device noise. |
 
+**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline is a structural constraint with no parameters of its own.
+
+**Circuit view.** A drawing is produced wherever one exists (built from the model's own design); `circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and `circuit_image(result, name=..., path=...)` writes it in any format.
+
 **What it does not claim.**
 
 - This is a model of response probabilities, not a claim about what the brain does.
@@ -100,6 +108,10 @@ qcog info question-order
 | `relative_phase` | float | 0.0 | -3.141592653589793 to 3.141592653589793 | no | Phase between the two alternatives: 0 and pi give maximal interference, pi/2 removes it. |
 | `visibility` | float | 0.0 | 0.0 to 1.0 | no | 0 = alternatives combined, 1 = fully distinguished. |
 | `decision_angle` | float | 1.5707963267948966 | 0.0 to 3.141592653589793 | no | Angle of the final yes/no question relative to the alternatives. |
+
+**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline is a structural constraint with no parameters of its own.
+
+**Circuit view.** A drawing is produced wherever one exists (built from the model's own design); `circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and `circuit_image(result, name=..., path=...)` writes it in any format.
 
 **What it does not claim.**
 
@@ -136,6 +148,10 @@ qcog info interference-paradox
 | `angle_cue_3` | float | 2.4 | 0.0 to 3.141592653589793 | no | Angle of the third cue. |
 | `sharpness` | float | 0.9 | 0.0 to 1.0 | no | How decisive each cue is (1 = fully decisive, 0 = uninformative). |
 
+**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline is a structural constraint with no parameters of its own.
+
+**Circuit view.** A drawing is produced wherever one exists (built from the model's own design); `circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and `circuit_image(result, name=..., path=...)` writes it in any format.
+
 **What it does not claim.**
 
 - This is a model of response probabilities, not a claim about what the brain does.
@@ -170,6 +186,10 @@ qcog info decision-tree
 | `framing_angle` | float | 1.1 | -3.141592653589793 to 3.141592653589793 | no | How much the framing of the question rotates the belief state before the evidence arrives. |
 | `repetitions` | int | 8 | 1 to 40 | no | How many times the same weak evidence is presented. |
 
+**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline is a structural constraint with no parameters of its own.
+
+**Circuit view.** A drawing is produced wherever one exists (built from the model's own design); `circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and `circuit_image(result, name=..., path=...)` writes it in any format.
+
 **What it does not claim.**
 
 - This is a model of response probabilities, not a claim about what the brain does.
@@ -203,6 +223,10 @@ qcog info belief-revision
 | `feminist_amplitude` | float | 1.2 | 0.0 to 3.141592653589793 | no | Angle of the belief state towards the feminist answer (pi/2 = certain). |
 | `teller_angle` | float | 2.0 | 0.0 to 3.141592653589793 | yes | Angle of the bank-teller question relative to the feminist one; pi/2 makes them maximally incompatible. |
 | `relative_phase` | float | 3.141592653589793 | -3.141592653589793 to 3.141592653589793 | no | Phase of the belief state: pi gives maximal destructive interference in the direct bank-teller question. |
+
+**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline is a structural constraint with no parameters of its own.
+
+**Circuit view.** A drawing is produced wherever one exists (built from the model's own design); `circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and `circuit_image(result, name=..., path=...)` writes it in any format.
 
 **What it does not claim.**
 
@@ -239,6 +263,10 @@ qcog info conjunction-fallacy
 | `opponent_cooperation` | float | 0.5 | 0.05 to 0.95 | no | Weight of the cooperating branch. |
 | `relative_phase` | float | 3.141592653589793 | -3.141592653589793 to 3.141592653589793 | no | The coherence of the defecting branch relative to the cooperating one: pi makes the defect amplitudes cancel when the opponent is unknown, which raises cooperation. |
 
+**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline is a structural constraint with no parameters of its own.
+
+**Circuit view.** A drawing is produced wherever one exists (built from the model's own design); `circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and `circuit_image(result, name=..., path=...)` writes it in any format.
+
 **What it does not claim.**
 
 - This is a model of response probabilities, not a claim about what the brain does.
@@ -271,6 +299,10 @@ qcog info disjunction-effect
 | `fish_typicality` | float | 0.25 | 0.05 to 0.95 | no | How typical the feature is for the second concept alone. |
 | `combination_strength` | float | 1.2 | 0.0 to 3.141592653589793 | no | Angle of the combination operation: 0 leaves the two concepts independent. |
 | `feature` | choice (fins, care, colourful) | 'fins' | - | no | Which feature typicality to report on. |
+
+**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline is a structural constraint with no parameters of its own.
+
+**Circuit view.** A drawing is produced wherever one exists (built from the model's own design); `circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and `circuit_image(result, name=..., path=...)` writes it in any format.
 
 **What it does not claim.**
 
@@ -306,6 +338,10 @@ qcog info concept-combination
 | `recall_angle` | float | 1.5707963267948966 | 0.0 to 3.141592653589793 | yes | Angle of the recall question; it is the question that can be interfered with. |
 | `mode` | choice (single cue, competing cues) | 'competing cues' | - | no | Which framing to report. |
 
+**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline is a structural constraint with no parameters of its own.
+
+**Circuit view.** A drawing is produced wherever one exists (built from the model's own design); `circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and `circuit_image(result, name=..., path=...)` writes it in any format.
+
 **What it does not claim.**
 
 - This is a model of response probabilities, not a claim about what the brain does.
@@ -337,6 +373,10 @@ qcog info associative-memory
 | `sense_1_weight` | float | 0.7 | 0.05 to 0.95 | no | Initial amplitude weight of the dominant sense. |
 | `context_strength` | float | 0.9 | 0.0 to 1.5707963267948966 | no | How strongly the sentence context rotates the sense space. |
 | `context_scope` | choice (narrow, broad) | 'narrow' | - | no | Which pair of senses the context mixes. |
+
+**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline is a structural constraint with no parameters of its own.
+
+**Circuit view.** A drawing is produced wherever one exists (built from the model's own design); `circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and `circuit_image(result, name=..., path=...)` writes it in any format.
 
 **What it does not claim.**
 
@@ -371,6 +411,10 @@ qcog info semantic-ambiguity
 | `num_labels` | int | 6 | 1 to 12 | no | How many category labels are presented in sequence. The exact engine enumerates one path per label sequence, so the count is capped at twelve; longer sequences can use the sampled backend. |
 | `selection_strength` | float | 0.9 | 0.05 to 1.0 | no | Sharpness of each categorisation question (1 = fully decisive, 0 = uninformative). |
 
+**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline is a structural constraint with no parameters of its own.
+
+**Circuit view.** A drawing is produced wherever one exists (built from the model's own design); `circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and `circuit_image(result, name=..., path=...)` writes it in any format.
+
 **What it does not claim.**
 
 - This is a model of response probabilities, not a claim about what the brain does.
@@ -402,6 +446,10 @@ qcog info sequential-categorization
 | --- | --- | --- | --- | --- | --- |
 | `combination_angle` | float | 0.7853981633974483 | 0.0 to 1.5707963267948966 | no | pi/4 gives the maximally entangled combination; 0 or pi/2 is a product state. |
 | `decoherence` | float | 0.0 | 0.0 to 1.0 | no | Depolarising probability applied to both features (0 = coherent combination). |
+
+**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline is a structural constraint with no parameters of its own.
+
+**Circuit view.** A drawing is produced wherever one exists (built from the model's own design); `circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and `circuit_image(result, name=..., path=...)` writes it in any format.
 
 **What it does not claim.**
 
@@ -435,6 +483,10 @@ qcog info conceptual-entanglement
 | `report_angle` | float | 0.83 | 0.0 to 3.141592653589793 | yes | Angle of the verbal self-report question. |
 | `behaviour_angle` | float | 1.5707963267948966 | 0.0 to 3.141592653589793 | yes | Angle of the behavioural question; the gap to the report drives the contradiction. |
 | `sharpness` | float | 1.0 | 0.0 to 1.0 | no | How decisive each question is. |
+
+**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline is a structural constraint with no parameters of its own.
+
+**Circuit view.** A drawing is produced wherever one exists (built from the model's own design); `circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and `circuit_image(result, name=..., path=...)` writes it in any format.
 
 **What it does not claim.**
 
@@ -471,6 +523,10 @@ qcog info contradictory-beliefs
 | `second_strategy` | choice (cooperate (C), defect (D), quantum (Q)) | 'quantum (Q)' | - | no | Strategy used by the column player. |
 | `decoherence` | float | 0.0 | 0.0 to 1.0 | no | Depolarising probability applied after the strategy unitaries. |
 
+**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline is a structural constraint with no parameters of its own.
+
+**Circuit view.** A drawing is produced wherever one exists (built from the model's own design); `circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and `circuit_image(result, name=..., path=...)` writes it in any format.
+
 **What it does not claim.**
 
 - This is a model of response probabilities, not a claim about what the brain does.
@@ -504,6 +560,10 @@ qcog info quantum-prisoners-dilemma
 | `first_stance` | float | 0.0 | 0.0 to 3.141592653589793 | no | How close the first party is to the cooperative strategy. |
 | `second_stance` | float | 0.0 | 0.0 to 3.141592653589793 | no | How close the second party is to the cooperative strategy. |
 | `suspicion` | float | 0.05 | 0.0 to 1.0 | no | Decay of the shared context between committing and choosing. |
+
+**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline is a structural constraint with no parameters of its own.
+
+**Circuit view.** A drawing is produced wherever one exists (built from the model's own design); `circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and `circuit_image(result, name=..., path=...)` writes it in any format.
 
 **What it does not claim.**
 
@@ -539,6 +599,10 @@ qcog info negotiation-trust
 | `mutation` | float | 0.02 | 0.0 to 0.5 | no | Probability per generation of switching to a random strategy. |
 | `start` | choice (mostly defectors, uniform, mostly cooperators) | 'mostly defectors' | - | no | Initial population mix. |
 
+**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline is a structural constraint with no parameters of its own.
+
+**Circuit view.** A drawing is produced wherever one exists (built from the model's own design); `circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and `circuit_image(result, name=..., path=...)` writes it in any format.
+
 **What it does not claim.**
 
 - This is a model of response probabilities, not a claim about what the brain does.
@@ -570,6 +634,10 @@ qcog info evolution-of-cooperation
 | `valuation_confidence` | float | 0.55 | 0.05 to 0.95 | no | How strongly the belief leans to the high-value answers. |
 | `rival_pressure` | float | 0.6 | 0.0 to 1.5707963267948966 | no | Rotation of the belief caused by thinking about competing bidders. |
 | `bid_aggressiveness` | float | 0.8 | 0.1 to 2.0943951023931953 | no | Angle of the bidding question; small values mean an eager bidder. |
+
+**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline is a structural constraint with no parameters of its own.
+
+**Circuit view.** A drawing is produced wherever one exists (built from the model's own design); `circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and `circuit_image(result, name=..., path=...)` writes it in any format.
 
 **What it does not claim.**
 
@@ -603,6 +671,10 @@ qcog info auctions
 | `first_bias` | float | 0.0 | 0.0 to 0.7853981633974483 | no | Small bias of the first player towards one convention. |
 | `second_bias` | float | 0.0 | 0.0 to 0.7853981633974483 | no | Small bias of the second player towards the same convention. |
 | `decoherence` | float | 0.0 | 0.0 to 1.0 | no | Loss of the shared context before the moves are made. |
+
+**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline is a structural constraint with no parameters of its own.
+
+**Circuit view.** A drawing is produced wherever one exists (built from the model's own design); `circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and `circuit_image(result, name=..., path=...)` writes it in any format.
 
 **What it does not claim.**
 
@@ -641,6 +713,10 @@ qcog info coordination-games
 | `decoherence` | float | 0.03 | 0.0 to 0.5 | no | Per-agent depolarising probability per round (forgetting). |
 | `rounds` | int | 8 | 1 to 20 | no | Number of interaction rounds. |
 
+**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline also honours `epsilon`, `kind`.
+
+**Circuit view.** A drawing is produced wherever one exists (built from the model's own design); `circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and `circuit_image(result, name=..., path=...)` writes it in any format.
+
 **What it does not claim.**
 
 - This is a model of response probabilities, not a claim about what the brain does.
@@ -676,6 +752,10 @@ qcog info quantum-opinion-dynamics
 | `decoherence` | float | 0.0 | 0.0 to 0.5 | no | Forgetting per round; higher values make positions settle. |
 | `rounds` | int | 10 | 1 to 20 | no | Number of interaction rounds. |
 
+**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline also honours `epsilon`, `kind`.
+
+**Circuit view.** A drawing is produced wherever one exists (built from the model's own design); `circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and `circuit_image(result, name=..., path=...)` writes it in any format.
+
 **What it does not claim.**
 
 - This is a model of response probabilities, not a claim about what the brain does.
@@ -707,6 +787,10 @@ qcog info polarization
 | `num_agents` | int | 7 | 3 to 9 | no | Odd group size (3 to 9). |
 | `individual_accuracy` | float | 0.7 | 0.5 to 0.95 | no | Probability that a single judge is right. |
 | `correlation` | float | 0.5 | 0.0 to 1.0 | no | 0 = independent judges, 1 = all judges share one state. |
+
+**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline also honours `accuracy`.
+
+**Circuit view.** A drawing is produced wherever one exists (built from the model's own design); `circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and `circuit_image(result, name=..., path=...)` writes it in any format.
 
 **What it does not claim.**
 
@@ -743,6 +827,10 @@ qcog info collective-judgment
 | `order` | choice (signal first, group first) | 'signal first' | - | no | Which question the agent puts to itself first. |
 | `phase` | float | 0.4 | -3.141592653589793 to 3.141592653589793 | no | Phase between the signal's components; it sets how much interference the signal carries. |
 
+**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline also honours `signal_accuracy`.
+
+**Circuit view.** A drawing is produced wherever one exists (built from the model's own design); `circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and `circuit_image(result, name=..., path=...)` writes it in any format.
+
 **What it does not claim.**
 
 - This is a model of response probabilities, not a claim about what the brain does.
@@ -775,6 +863,10 @@ qcog info information-cascades
 | `second_option_weight` | float | 0.3 | 0.02 to 0.9 | no | Initial preference weight of option B (the rest goes to C). |
 | `deliberation_strength` | float | 0.8 | 0.0 to 3.141592653589793 | no | Angle of the deliberation operator, which mixes the top two options. |
 | `phase` | float | 0.0 | -3.141592653589793 to 3.141592653589793 | no | Relative phase between the options, which is what makes the pairwise comparisons order-dependent. |
+
+**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline is a structural constraint with no parameters of its own.
+
+**Circuit view.** A drawing is produced wherever one exists (built from the model's own design); `circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and `circuit_image(result, name=..., path=...)` writes it in any format.
 
 **What it does not claim.**
 

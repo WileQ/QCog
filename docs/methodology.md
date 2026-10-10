@@ -146,6 +146,50 @@ account is *forced* to predict zero there, so the model's bar is the whole conte
 (an order effect, an interference contribution, a conjunction excess, a sure-thing violation, a framing effect,
 a Condorcet-cycle certificate).
 
+## 5d. Every visualization, and how it is kept working
+
+The library can draw eleven kinds of chart, and each one is exercised on synthetic input by
+`qcog.viz.standalone_checks()` and, for every model, by `qcog.viz.catalogue_checks()` - the same functions that
+`python scripts/check_figures.py` calls. A chart cannot quietly stop working, and a figure cannot lose its text
+description without failing the test suite.
+
+| Function | What it shows | Where it is used |
+| --- | --- | --- |
+| `probability_bars` | joint outcome probabilities of one simulation | every model |
+| `marginal_bars` | the marginal answer distribution of each question | wide outcome spaces |
+| `order_effect_figure` | the first question's marginal in both orders | order and framing models |
+| `interference_figure` | direct versus interference contributions | interference models |
+| `sweep_figure` | every metric of a parameter sweep | all models with sweeps |
+| `line_figure` | trajectories (opinions, beliefs, populations) | modules A and D |
+| `histogram_figure` | count distributions (votes, decisions) | cascades, collective judgement |
+| `bloch_sphere` | a qubit belief state and its length | module A |
+| `heatmap_figure` | payoff tables and other tidy grids | module C |
+| `classical_comparison_figure` | model versus classical baseline, quantity by quantity | every model |
+| `circuit_figure` | the compiled Qiskit circuit, with an adjustable style | every model with a circuit |
+
+Two conventions make the charts readable rather than merely present. First, series differ by *colour and* by
+linestyle, marker or hatch (eight colours, then four line styles, then markers), so a figure survives greyscale
+printing and colour-vision deficiency, and a two-series comparison is never distinguished by hue alone. Second,
+every figure carries a plain-language description on the figure object, so the same text serves the explorer, the
+HTML report and a screen reader.
+
+## 5e. Adjusting the classical comparison
+
+The comparison is a first-class output and as adjustable as any parameter:
+
+* `classical=False` skips it (and the report and figures say so, rather than showing an empty chart);
+* `rows` and `max_rows` work for every model - they select and cap the comparison rows;
+* models whose baseline has real parameters declare them in `classical_option_names` and honour them in
+  `comparison_rows`: `accuracy` (Condorcet's jury theorem), `epsilon` and `kind` (bounded-confidence opinion
+  dynamics), `signal_accuracy` (Bayesian cascades). The rows are *recomputed*, not relabelled, so a figure always
+  shows the baseline that was actually used;
+* options a model cannot honour are recorded in `result.classical["options_ignored"]` and named in the verdict,
+  so nothing is dropped silently.
+
+The point of the knob is a counterfactual a reader will actually ask: *would a classical group have done better,
+judge for judge?* `classical_options={"accuracy": 0.8}` answers it - Condorcet's value moves from 0.874 to 0.967
+at seven judges, while the model's own majority accuracy stays where its state puts it.
+
 ## 6. Statistical layer
 
 `qcog.core.metrics`: total variation, KL and Jensen-Shannon divergence, Hellinger and Bhattacharyya distances,
@@ -185,7 +229,7 @@ show up as over-dispersion relative to the independent binomial.
 `qcog evidence` prints the table; the same table is embedded in the generated report. The checks are listed in
 the README. Two remarks on method:
 
-* the checks are *executable* rather than textual, so a regression fails the test suite (83 tests) and the
+* the checks are *executable* rather than textual, so a regression fails the test suite (120 tests) and the
   evidence table;
 * the checks deliberately include the classical limits (zero entanglement, zero sharpness, commuting questions,
   full decoherence), because a model that only "works" away from its own limits is usually wrong.

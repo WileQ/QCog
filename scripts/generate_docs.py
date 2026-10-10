@@ -59,6 +59,26 @@ def module_block(letter: str, models: list) -> str:
                     f"{'yes' if spec.fittable else 'no'} | {spec.description} |"
                 )
             lines.append("")
+        options = getattr(model, "classical_option_names", ())
+        lines += [
+            "**Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select "
+            "comparison rows for every model; "
+            + (
+                "this model's baseline also honours "
+                + ", ".join(f"`{name}`" for name in options)
+                + "."
+                if options
+                else "this model's baseline is a structural constraint with no parameters of its own."
+            ),
+            "",
+        ]
+        designs = "built from the model's own design"
+        lines += [
+            f"**Circuit view.** A drawing is produced wherever one exists ({designs}); "
+            "`circuit_style`, `circuit_scale` and `circuit_fold` adjust the image, and "
+            "`circuit_image(result, name=..., path=...)` writes it in any format.",
+            "",
+        ]
         if model.caveats:
             lines += ["**What it does not claim.**", ""]
             lines += [f"- {caveat}" for caveat in model.caveats]

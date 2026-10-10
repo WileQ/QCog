@@ -14,12 +14,13 @@ from typing import Iterable, Mapping, Sequence
 
 import numpy as np
 
-from .style import PALETTE, annotate_figure, color_for, new_figure
+from .style import PALETTE, annotate_figure, color_for, new_figure, series_style
 
 __all__ = [
     "probability_bars",
     "classical_comparison_figure",
     "circuit_figure",
+    "CIRCUIT_STYLES",
     "marginal_bars",
     "order_effect_figure",
     "interference_figure",
@@ -78,6 +79,9 @@ def marginal_bars(result, title: str | None = None):
             width=width,
             label=question,
             color=color_for(position),
+            hatch=(None if position == 0 else "//"),
+            edgecolor="white",
+            linewidth=0.6,
         )
     axis.set_xticks(np.arange(len(frame[frame["question"] == questions[0]])) + width)
     axis.set_xticklabels(list(frame[frame["question"] == questions[0]]["outcome"]), rotation=20, ha="right")
@@ -180,7 +184,11 @@ def sweep_figure(sweep_result, title: str | None = None):
     figure = new_figure(6.0, 3.4)
     axis = figure.add_subplot(111)
     for index, metric in enumerate(metrics):
-        axis.plot(frame[parameter], frame[metric], marker="o", color=color_for(index), label=metric)
+        style = series_style(index)
+        axis.plot(
+            frame[parameter], frame[metric], label=metric,
+            color=style["color"], linestyle=style["linestyle"], marker=style["marker"], markersize=4,
+        )
     axis.set_xlabel(parameter.replace("_", " "))
     axis.set_ylabel("value")
     axis.set_title(title or f"How the model responds to {parameter.replace('_', ' ')}")
@@ -204,8 +212,13 @@ def line_figure(spec: Mapping, title: str | None = None):
     figure = new_figure(6.2, 3.6)
     axis = figure.add_subplot(111)
     for index, (label, values) in enumerate(spec["series"].items()):
-        axis.plot(spec["x"], values, marker="o" if len(spec["x"]) < 12 else None,
-                  color=color_for(index), label=label)
+        style = series_style(index)
+        axis.plot(
+            spec["x"], values, label=label,
+            color=style["color"], linestyle=style["linestyle"],
+            marker=style["marker"] if len(spec["x"]) < 16 else None,
+            markevery=max(1, len(spec["x"]) // 12), markersize=4,
+        )
     axis.set_xlabel(spec.get("xlabel", "step"))
     axis.set_ylabel(spec.get("ylabel", "value"))
     axis.set_title(title or spec.get("title", "Trajectory"))
@@ -230,7 +243,11 @@ def histogram_figure(spec: Mapping, title: str | None = None):
     width = 0.8 / max(len(series), 1)
     positions = np.arange(len(spec["x"]))
     for index, (label, values) in enumerate(series):
-        axis.bar(positions + index * width, values, width=width, label=label, color=color_for(index))
+        style = series_style(index)
+        axis.bar(
+            positions + index * width, values, width=width, label=label,
+            color=style["color"], hatch=("//" if index % 2 else None), edgecolor="white", linewidth=0.6,
+        )
     axis.set_xticks(positions + width * (len(series) - 1) / 2)
     axis.set_xticklabels([str(value) for value in spec["x"]])
     axis.set_xlabel(spec.get("xlabel", ""))
@@ -403,8 +420,8 @@ def classical_comparison_figure(rows: Sequence[Mapping], title: str | None = Non
     axis = figure.add_subplot(111)
     positions = np.arange(len(rows))
     axis.bar(positions - 0.2, model_values, width=0.4, color=PALETTE["blue"], label="quantum model")
-    axis.bar(positions + 0.2, baseline_values, width=0.4, color=PALETTE["grey"],
-             label="classical baseline")
+    axis.bar(positions + 0.2, baseline_values, width=0.4, color="white", edgecolor=PALETTE["grey"],
+             hatch="//", linewidth=1.0, label="classical baseline")
     for position, (model_value, baseline_value) in enumerate(zip(model_values, baseline_values)):
         axis.text(position - 0.2, model_value + 0.01, f"{model_value:.3f}", ha="center", fontsize=8)
         axis.text(position + 0.2, baseline_value + 0.01, f"{baseline_value:.3f}", ha="center", fontsize=8)
@@ -431,13 +448,35 @@ def classical_comparison_figure(rows: Sequence[Mapping], title: str | None = Non
     return figure
 
 
-def circuit_figure(design, title: str | None = None, measurements: Sequence | None = None):
+#: Styles the Qiskit matplotlib drawer ships with.  A full Qiskit style dictionary is
+#: accepted wherever a style name is, so a user can bring their own.
+CIRCUIT_STYLES = ("default", "iqp", "clifford", "bw")
+
+
+def circuit_figure(
+    design,
+    title: str | None = None,
+    measurements: Sequence | None = None,
+    *,
+    style: str | dict | None = None,
+    scale: float = 0.85,
+    fold: int = 28,
+    initial_state: bool = False,
+    filename=None,
+    dpi: int = 160,
+):
     """Draw a quantum circuit, with a text alternative in place of the diagram.
 
     ``design`` may be a Qiskit ``QuantumCircuit`` or the ``(state, measurements)`` pair
-    a model declares.  If the matplotlib drawer is unavailable (or the circuit cannot
-    be rendered) the figure degrades to the plain-language description rather than
-    failing, so a report can always be produced.
+    a model declares.  If the matplotlib drawer is unavailable (or the circuit cannot be
+    rendered) the figure degrades to the plain-language description rather than failing,
+    so a report can always be produced.
+
+    The image itself is adjustable: ``style`` (one of :data:`CIRCUIT_STYLES`, or a full
+    Qiskit style dictionary), ``scale`` (gate size), ``fold`` (how many gates before the
+    drawing wraps), ``initial_state`` (show the ``|0>`` inputs) and ``filename`` (write
+    the image to that path - the suffix chooses the format, so ``.png``, ``.svg`` and
+    ``.pdf`` all work).
     """
     from qiskit import QuantumCircuit
 
@@ -456,11 +495,18 @@ def circuit_figure(design, title: str | None = None, measurements: Sequence | No
         + f" It contains {statistics['size']} operations at depth {statistics['depth']} on "
         + f"{statistics['qubits']} qubit(s): {operations}."
     )
+    if isinstance(style, str) and style not in ("", "default"):
+        style_spec = {"name": style}
+    elif isinstance(style, dict):
+        style_spec = style
+    else:
+        style_spec = None  # the drawer's own default, without a spurious warning
     try:
         from qiskit.visualization import circuit_drawer
 
         figure = circuit_drawer(
-            circuit, output="mpl", scale=0.85, fold=28, initial_state=False, justify="left"
+            circuit, output="mpl", scale=float(scale), fold=int(fold),
+            initial_state=bool(initial_state), justify="left", style=style_spec,
         )
     except Exception:  # pragma: no cover - the drawer is optional, the text is not
         figure = new_figure(7.0, 1.6)
@@ -472,6 +518,8 @@ def circuit_figure(design, title: str | None = None, measurements: Sequence | No
         )
         axis.text(0.0, 0.6, wrapped, fontsize=8, va="top", wrap=True)
         annotate_figure(figure, description)
+        if filename is not None:
+            figure.savefig(filename, bbox_inches="tight", dpi=dpi)
         return figure
     annotate_figure(
         figure,
@@ -482,4 +530,6 @@ def circuit_figure(design, title: str | None = None, measurements: Sequence | No
     )
     if title and getattr(figure, "axes", None):
         figure.axes[0].set_title(title, fontsize=10)
+    if filename is not None:
+        figure.savefig(filename, bbox_inches="tight", dpi=dpi)
     return figure

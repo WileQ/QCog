@@ -47,7 +47,7 @@ model, experiment or dataset. Q-Cog provides **one workflow for all of them**:
 | Configure the model | states, questions, measurement order, parameters | one parameter schema that drives the CLI, the UI, the fitting layer and the docs |
 | Execute with Qiskit | exact, sampled, or compiled circuits | four interchangeable backends, cross-checked against each other |
 | Visualise | state, interference, networks, trajectories | accessible figures with mandatory text descriptions |
-| Look at the circuit | how the model becomes a Qiskit circuit | a drawing for every model that has one, and a written reason when it does not |
+| Look at the circuit | how the model becomes a Qiskit circuit | a drawing for every model that has one (style, scale and folding are adjustable), and a written reason when it does not |
 | Explain | classical baseline, predictions, limitations | rule-based text generated from the numbers, plus an explicit caveat list |
 
 Two things hold for **all twenty-three models**, and both are enforced by tests:
@@ -204,7 +204,10 @@ qcog sweep question-order                  # the model's own parameter sweeps
 qcog fit question-order data.json          # fit to observed frequencies (JSON or CSV)
 qcog report --out out/qcog_report.html --markdown
 qcog circuit quantum-prisoners-dilemma     # draw (and describe) the model's circuit
-qcog circuit collective-judgment --out out # write the drawings as PNGs
+qcog circuit collective-judgment --out out    # write the drawings as images
+qcog circuit auctions --style bw --format svg --scale 0.7 --fold 20
+qcog run collective-judgment --classical-option accuracy=0.8    # adjust the classical baseline
+qcog run auctions --no-classical --no-circuits                  # switch either off
 qcog run question-order --fast             # headline numbers, no parameter sweeps
 qcog evidence                              # what the library checks about itself
 qcog backends                              # the available execution backends
@@ -258,8 +261,10 @@ failure is visible rather than silent. The checks include:
 Two execution paths are implemented from *one* definition - projectors - and compared: the analytic engine
 (Qiskit `Statevector`/`DensityMatrix`) and compiled circuits on `qiskit-aer`. Agreement between them is what
 makes the compilation, the collapse semantics and the frame bookkeeping trustworthy. The test suite
-(83 tests) additionally covers states, measurements, channels, backends, analysis, baselines, fitting, the CLI,
-the reports and every model's central claims.
+(120 tests) additionally covers states, measurements, channels, backends, analysis, baselines, fitting, the CLI,
+the reports, every visualization and every model's central claims; `python scripts/check_figures.py` renders every
+chart the library can draw - 11 figure functions and every model's figure set - and fails if one is broken or has
+lost its text description.
 
 Writing those checks paid for itself: it found a depolarising channel that was not trace-preserving in the
 standard sense, a player-ordering error that transposed the game-theory payoff table, and two circuit-compilation
@@ -317,15 +322,21 @@ src/qcog/
   data/          illustrative datasets with provenance notes
 app/             Streamlit explorer
 examples/        five runnable scripts, from five minutes to the full catalogue
+notebooks/       quickstart.ipynb - a short, simple notebook tour
 showcase/        a top-level demo: script + captured output + figures + HTML reports
-tests/           83 tests
+scripts/         documentation and figure generators, plus the two checkers
+tests/           120 tests
 docs/            project page, methodology, accessibility, demo script, submission notes
 ```
 
 ## Documentation
 
+* [`notebooks/quickstart.ipynb`](notebooks/quickstart.ipynb) - a short notebook tour: run a model, change a
+  parameter, read the classical comparison, draw the circuit, sample it on a simulator, save a report.
 * [`showcase/`](showcase/) - runnable demonstration with its captured output, figures and HTML reports
   (`python showcase/run_showcase.py`, or `--all` for the whole catalogue).
+* [`scripts/check_figures.py`](scripts/check_figures.py) - renders every visualization and reports;
+  [`scripts/check_docs.py`](scripts/check_docs.py) - verifies that the documentation matches the code.
 * [`docs/project_page.md`](docs/project_page.md) - the project page: what it does, what problem it explores,
   how to run it, how to replicate or extend it.
 * [`docs/methodology.md`](docs/methodology.md) - the mathematics, the conventions, and the statistical tests.
@@ -336,6 +347,22 @@ docs/            project page, methodology, accessibility, demo script, submissi
 * [`docs/submission_checklist.md`](docs/submission_checklist.md) - requirement-by-requirement status.
 * [`docs/models.generated.md`](docs/models.generated.md) - the catalogue generated from the code
   (`python scripts/generate_docs.py`).
+
+## Adjusting the two things you compare
+
+Two aspects of a run are configurable in exactly the same way as a model parameter, from Python, the CLI and the
+explorer:
+
+* **The classical comparison.** `classical=False` omits it; `classical_options={...}` adjusts it. Two options
+  work for every model - `rows` (keep only the comparison rows matching a substring) and `max_rows` - and the
+  models whose baseline has real parameters honour their own: `accuracy` for Condorcet's jury theorem,
+  `epsilon` and `kind` for the bounded-confidence opinion dynamics, `signal_accuracy` for the Bayesian cascade.
+  Anything a model cannot honour is *reported as ignored* rather than silently dropped, and the verdict sentence
+  says which baseline parameters were used.
+* **The circuit image.** `circuits=False` omits the drawings; `circuit_style`, `circuit_scale` and `circuit_fold`
+  control how they are drawn; `model.circuit_image(result, name=..., path=...)` writes one image in any format
+  matplotlib supports (`png`, `svg`, `pdf`), and `model.circuit_images(result, directory=...)` writes them all.
+  From the command line: `qcog circuit <slug> --which NAME --style bw --scale 0.7 --format svg --out DIR`.
 
 ## Extending it
 
