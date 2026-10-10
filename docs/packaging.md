@@ -77,12 +77,15 @@ After that, anyone can `pip install qcog`.
 ## What was verified here
 
 * `python -m pip install -e .` works from a checkout (perform it in a virtual environment).
-* the source distribution builds and contains the package, the datasets, the website stylesheet and the licence:
-  `python -c "import setuptools.build_meta as bm; print(bm.build_sdist('dist'))"` produced an 86-member archive.
-* the metadata is valid: the build completed with no metadata error, and the console entry point and the extras
-  appear in the generated `PKG-INFO`.
-* building a *wheel* needs the `wheel` package, which is not installed in every environment (it was missing in
-  the one used here); step 4 above covers it, and the release workflow installs it before building.
+* `python -m build` produces both artefacts: `dist/qcog-<version>.tar.gz` (86 members) and a wheel, and the wheel
+  carries the package, the datasets (`qcog/data/`), the website package with its stylesheet
+  (`qcog/website/style/site.css`) and the console entry point - 60 members in all.
+* `python -m twine check dist/*` passes for both artefacts, and the wheel's metadata is current:
+  `Metadata-Version: 2.4` with `License-Expression: MIT` and `License-File: LICENSE`, the six runtime
+  requirements and the `ionq` extra.
+* the *packaged* code runs on its own: unpacking the wheel and importing it from there - a directory that
+  contains nothing but that wheel's contents - gives `import qcog` and a complete `python -m qcog evidence`
+  run, so nothing in the library secretly depends on the checkout.
 
 The remaining steps in the list above - the name check, the TestPyPI dry run and the final upload - need your
 PyPI account, so they are the part only you can do.

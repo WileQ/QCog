@@ -2,7 +2,8 @@
 
 Three things are asserted: the Markdown subset the site is built on behaves (and never crashes on the
 project's own documentation), a small site builds correctly into a temporary directory with all its
-accessibility properties, and the committed site passes `scripts/check_website.py`.
+accessibility properties, and a site that has been built here passes `scripts/check_website.py` (the
+website workflow runs that same check on the site it deploys).
 """
 
 from __future__ import annotations
@@ -88,7 +89,9 @@ def test_a_small_site_builds_with_every_property(tmp_path):
     assert "circuit" in html.lower()
 
 
-def test_the_committed_site_passes_its_checks():
+def test_the_generated_site_passes_its_checks():
+    if not (ROOT / "website" / "index.html").exists():
+        pytest.skip("website/ has not been built here; run python scripts/build_website.py")
     completed = subprocess.run(
         [sys.executable, str(ROOT / "scripts" / "check_website.py")],
         cwd=str(ROOT), capture_output=True, text=True, timeout=600,

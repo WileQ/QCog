@@ -13,8 +13,20 @@ from __future__ import annotations
 from typing import Iterable, Mapping, Sequence
 
 import numpy as np
+from pandas.api.types import is_bool_dtype, is_numeric_dtype
 
 from .style import PALETTE, annotate_figure, color_for, new_figure, series_style
+
+
+def _is_number(column) -> bool:
+    """True for numbers, and False for text and for booleans.
+
+    ``np.issubdtype(column.dtype, np.number)`` used to answer this, but a pandas extension
+    dtype - the ``StringDtype`` that pandas 3 gives a text column, for instance - cannot be
+    interpreted by numpy at all, so the question is put to pandas instead.
+    """
+    return bool(is_numeric_dtype(column)) and not bool(is_bool_dtype(column))
+
 
 __all__ = [
     "VisualizationUnavailable",
@@ -30,6 +42,7 @@ __all__ = [
     "histogram_figure",
     "bloch_sphere",
     "heatmap_figure",
+    "payoff_table_figure",
     "default_figures",
     "text_alternatives",
     "savefig",
@@ -216,7 +229,7 @@ def sweep_figure(sweep_result, title: str | None = None):
     metrics = [
         column
         for column in frame.columns
-        if column != parameter and np.issubdtype(frame[column].dtype, np.number)
+        if column != parameter and _is_number(frame[column])
     ]
     figure = new_figure(6.0, 3.4)
     axis = figure.add_subplot(111)
@@ -371,7 +384,7 @@ def heatmap_figure(
     and the first two text columns become the axes, and the title names the value so the
     chart cannot be misread.
     """
-    numeric = [column for column in frame.columns if np.issubdtype(frame[column].dtype, np.number)]
+    numeric = [column for column in frame.columns if _is_number(frame[column])]
     if not numeric:
         raise ValueError("the table has no numeric column to plot")
     text_columns = [column for column in frame.columns if column not in numeric]
@@ -387,7 +400,7 @@ def heatmap_figure(
     columns = list(dict.fromkeys(frame[column_column]))
     grid = np.full((len(rows), len(columns)), np.nan)
     for _, entry in frame.iterrows():
-        grid[rows.index(entry[row_column]), columns.index(entry[frame.columns[1]])] = entry[column]
+        grid[rows.index(entry[row_column]), columns.index(entry[column_column])] = entry[column]
     figure = new_figure(1.5 + 0.8 * len(columns), 1.6 + 0.6 * len(rows))
     axis = figure.add_subplot(111)
     image = axis.imshow(grid, cmap="viridis")
@@ -417,6 +430,118 @@ def heatmap_figure(
         + ".",
     )
     return figure
+
+
+def _first_column(frame, names: Sequence[str]):
+    """The first of ``names`` that the table has, or ``None``."""
+    for name in names:
+        if name in frame.columns:
+            return name
+    return None
+
+
+def payoff_table_figure(
+    frame,
+    title: str | None = None,
+    row_column: str | None = None,
+    column_column: str | None = None,
+    quantum_column: str | None = None,
+    classical_column: str | None = None,
+):
+    """Two heatmaps of a game table side by side: the quantum payoff and the classical one.
+
+    A payoff table holds several numbers per outcome, so a single heatmap of it cannot be
+    honest - the last numeric column wins, and in this catalogue that is the cooperation flag.
+    The model's payoff to the first player is drawn on the left and the classical account's
+    payoff to the same player on the right, on one shared colour scale, so the two accounts can
+    be read against each other cell by cell.  The numbers themselves stay in the data table
+    that accompanies every chart, and the description says how many cells differ.
+    """
+    numeric = [column for column in frame.columns if _is_number(frame[column])]
+    if not numeric:
+        raise ValueError("the table has no numeric column to plot")
+    quantum_column = quantum_column or _first_column(frame, ("quantum_first", "quantum_payoff", "payoff"))
+    classical_column = classical_column or _first_column(frame, ("classical_first", "classical_payoff"))
+    if quantum_column is None or classical_column is None:
+        raise ValueError("the table has no quantum/classical payoff pair to compare")
+    for name in (quantum_column, classical_column):
+        if name not in frame.columns:
+            raise ValueError(f"no column named {name!r} in the table")
+    text_columns = [column for column in frame.columns if column not in numeric]
+    if row_column is None:
+        row_column = text_columns[0] if text_columns else frame.columns[0]
+    if column_column is None:
+        candidates = [name for name in text_columns if name != row_column]
+        column_column = candidates[0] if candidates else frame.columns[1]
+    rows = list(dict.fromkeys(frame[row_column]))
+    columns = list(dict.fromkeys(frame[column_column]))
+    panels: list[np.ndarray] = []
+    for name in (quantum_column, classical_column):
+        grid = np.full((len(rows), len(columns)), np.nan)
+        for _, entry in frame.iterrows():
+            grid[rows.index(entry[row_column]), columns.index(entry[column_column])] = entry[name]
+        panels.append(grid)
+    drawn = np.concatenate([panel.ravel() for panel in panels])
+    drawn = drawn[np.isfinite(drawn)]
+    if drawn.size:
+        low, high = float(drawn.min()), float(drawn.max())
+    else:
+        low, high = 0.0, 1.0
+    if high <= low:
+        low, high = low - 0.5, high + 0.5          # a flat table still needs a scale
+    figure = new_figure(3.4 + 1.4 * len(columns), 2.2 + 0.7 * len(rows))
+    figure.set_layout_engine("constrained")     # the shared colorbar needs a layout engine
+    image = None
+    for position, (name, label, grid) in enumerate(
+        ((quantum_column, "quantum model", panels[0]), (classical_column, "classical account", panels[1])),
+        start=1,
+    ):
+        axis = figure.add_subplot(1, 2, position)
+        image = axis.imshow(grid, cmap="viridis", vmin=low, vmax=high)
+        axis.set_xticks(range(len(columns)))
+        axis.set_xticklabels(columns, rotation=20, ha="right")
+        axis.set_yticks(range(len(rows)))
+        axis.set_yticklabels(rows)
+        for i in range(len(rows)):
+            for j in range(len(columns)):
+                if not np.isnan(grid[i, j]):
+                    axis.text(j, i, f"{grid[i, j]:.2f}", ha="center", va="center", color="white", fontsize=8)
+        axis.set_xlabel(column_column)
+        axis.set_ylabel(row_column)
+        axis.set_title(f"{label}  ({name})")
+        axis.grid(False)
+    assert image is not None
+    figure.colorbar(image, ax=list(figure.axes), shrink=0.8, label="payoff")
+    comparable = np.isfinite(panels[0]) & np.isfinite(panels[1])
+    differences = int(np.count_nonzero(~np.isclose(panels[0][comparable], panels[1][comparable]))) if comparable.any() else 0
+    annotate_figure(
+        figure,
+        f"Two heatmaps of the payoff table on one shared colour scale ({low:.2f} to {high:.2f}): "
+        f"{quantum_column} on the left, {classical_column} on the right. Rows are {row_column}, "
+        f"columns are {column_column}. "
+        + ("The two accounts agree in every cell." if differences == 0 else
+           f"The two accounts differ in {differences} of the {int(np.count_nonzero(comparable))} cells.")
+        + " "
+        + "; ".join(
+            f"{rows[i]} vs {columns[j]}: quantum {panels[0][i, j]:.2f}, classical {panels[1][i, j]:.2f}"
+            for i in range(len(rows))
+            for j in range(len(columns))
+            if comparable[i, j]
+        )
+        + ".",
+    )
+    return figure
+
+
+def _payoff_figure(frame):
+    """The payoff chart for a tidy game table: the quantum account beside the classical one."""
+    quantum = _first_column(frame, ("quantum_first", "quantum_payoff", "payoff"))
+    classical = _first_column(frame, ("classical_first", "classical_payoff"))
+    if quantum and classical:
+        return payoff_table_figure(frame, quantum_column=quantum, classical_column=classical)
+    if quantum:
+        return heatmap_figure(frame, value_column=quantum)
+    return heatmap_figure(frame)
 
 
 def default_figures(model, result) -> dict:
@@ -455,7 +580,7 @@ def default_figures(model, result) -> dict:
         frame = analysis.get(key)
         if frame is not None and hasattr(frame, "columns"):
             try:
-                figures[key.replace("_", " ")] = heatmap_figure(frame)
+                figures[key.replace("_", " ")] = _payoff_figure(frame)
             except Exception:  # pragma: no cover - a table without numeric columns
                 pass
     return figures

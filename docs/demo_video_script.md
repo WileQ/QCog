@@ -51,7 +51,8 @@ parity rows.
 
 ### 1:45 - 2:15 | Twenty-three models, one workflow
 
-**Screen:** `qcog list`, then the [website](../website/index.html) - a model page with its figures, its
+**Screen:** `qcog list`, then the website (the published URL, or `website/index.html` after
+`python scripts/build_website.py`) - a model page with its figures, its
 classical comparison and its circuit drawings. If short on time, show the catalogue report instead.
 
 > "Twenty-three models in four modules: individual judgement, concepts and memory, strategic decisions, and

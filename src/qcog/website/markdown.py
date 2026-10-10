@@ -44,6 +44,7 @@ def _inline(text: str, resolve: Resolver | None) -> str:
     """Inline markup: escapes first, then code, images, links, bold and italic."""
     out = html.escape(text, quote=False)
     # inline code first, so its contents are not further processed
+    out = re.sub(r"``([^`]+)``", lambda m: f"<code>{m.group(1)}</code>", out)
     out = re.sub(r"`([^`]+)`", lambda m: f"<code>{m.group(1)}</code>", out)
     if resolve is not None:
         def image(match: re.Match) -> str:
@@ -66,9 +67,34 @@ def _inline(text: str, resolve: Resolver | None) -> str:
     return out
 
 
+def _row_cells(row: str) -> list[str]:
+    """Split a table row on the pipes that are not inside an inline code span.
+
+    A cell such as ``--backend exact|sampled|aer`` is one cell and not four, so the code
+    spans are held aside while the row is split, and put back afterwards.
+    """
+    text = row.strip()
+    if text.startswith("|"):
+        text = text[1:]
+    if text.endswith("|"):
+        text = text[:-1]
+    spans: list[str] = []
+
+    def protect(match: re.Match) -> str:
+        spans.append(match.group(0))
+        return f"\x00{len(spans) - 1}\x00"
+
+    masked = re.sub(r"``[^`]+``|`[^`]+`", protect, text)
+    cells = []
+    for cell in masked.split("|"):
+        put_back = re.sub(r"\x00(\d+)\x00", lambda match: spans[int(match.group(1))], cell)
+        cells.append(put_back.strip())
+    return cells
+
+
 def _table(rows: list[str], resolve: Resolver | None) -> str:
     """A pipe table: the first row is the header, the second the alignment rule."""
-    cells = [[cell.strip() for cell in row.strip().strip("|").split("|")] for row in rows]
+    cells = [_row_cells(row) for row in rows]
     header, body = cells[0], cells[2:]
     out = ["<div class=\"table-wrap\"><table>"]
     out.append(

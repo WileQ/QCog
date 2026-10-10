@@ -103,11 +103,11 @@ the code.
   QQ equality, draws the circuits with the survey questions on the gates, samples them on a simulator and saves a
   report. Its cells are executed by the test suite, so it always runs.
 * **`demos/examples/06_economy_and_vote.py`** - the same survey as a script, writing the circuit images out.
-* **`showcase/`** - the same ideas as a script, with its captured output, every figure and an HTML report per
+* **`demos/showcase/`** - the same ideas as a script, with its captured output, every figure and an HTML report per
   model.
-* **`website/`** - the static site, generated from the library (`python scripts/build_website.py`): a page per
-  model with its figures, classical comparison and circuit drawings, the rendered notebook, the examples with
-  their captured output, and the study. It is published on GitHub Pages by a workflow, needs no server, and works
+* **the website** - the static site, generated from the library (`python scripts/build_website.py`, writing
+  into `website/`, which is not committed): a page per model with its figures, classical comparison and circuit
+  drawings, the rendered notebook, the examples with their captured output, and the study. It is published on GitHub Pages by a workflow, needs no server, and works
   from a local folder as well as over the web.
 
 ### The shortest complete example
@@ -186,7 +186,7 @@ Industry best practices for UI accessibility are followed by construction:
   plus a long description, with the underlying data table next to it;
 * the colour-blind-safe Okabe-Ito palette, with no information carried by colour alone;
 * semantic HTML with a skip link, ordered headings, table captions and `scope` attributes, and visible focus
-  outlines, in the reports and on the [website](../website/);
+  outlines, in the reports and on the generated website;
 * the site follows the reader's system preference for a dark background, and works with images disabled because
   every chart carries its description and its data table;
 * explanations written in plain language and generated from the computed numbers.

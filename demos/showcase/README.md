@@ -14,7 +14,7 @@ python demos/showcase/run_showcase.py --reports           # also write an access
 ```
 
 No installation is needed: the script adds `src/` to the path itself, so it runs from a plain checkout. For a
-cell-by-cell version of the same tour, open [`demos/quickstart.ipynb`](../demos/quickstart.ipynb).
+cell-by-cell version of the same tour, open [`demos/quickstart.ipynb`](../quickstart.ipynb).
 
 ## What it prints
 

@@ -110,7 +110,7 @@ def main() -> int:
     for relative in (
         "demos/showcase/run_showcase.py", "demos/showcase/output.txt", "demos/showcase/figures",
         "demos/showcase/reports", "demos/README.md",
-        "website/index.html", "website/models/index.html", "website/assets/style.css",
+        "src/qcog/website/build.py", "src/qcog/website/style/site.css",
         "scripts/build_website.py", "scripts/check_website.py", "docs/packaging.md",
         ".github/workflows/pages.yml", ".github/workflows/release.yml",
         "demos/quickstart.ipynb", "demos/examples/05_catalogue_report.py",
@@ -158,6 +158,11 @@ def main() -> int:
     check("project page points at the showcase", "showcase" in project_page)
     check("project page points at the notebook", "notebook" in project_page.lower())
     check("project page points at the website", "website" in project_page.lower())
+    check(
+        "the website is generated, not committed",
+        "website/" in _read(".gitignore"),
+        "listed in .gitignore",
+    )
     check("contributing explains the visualization check", "check_figures.py" in contributing)
     check("showcase README explains its own contents", "run_showcase.py" in showcase_readme and "output.txt" in showcase_readme)
 

@@ -20,4 +20,7 @@ out/
 !studies/quantum_advantage/figures/*.png
 .DS_Store
 Thumbs.db
-.streamlit/secrets.toml
+
+# the generated static website: built by scripts/build_website.py and published from
+# .github/workflows/pages.yml, so the generated HTML and its figures are not committed
+website/

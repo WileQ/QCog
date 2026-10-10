@@ -5,24 +5,24 @@ This is the demo showcase: it deliberately lives *outside* the package, because 
 is an example of *using* Q-Cog rather than part of it.  Nothing here is imported by the
 library, and the script works from a plain checkout with no installation.
 
-    python demos/demos/showcase/run_showcase.py                       # the four models in MODELS
-    python demos/demos/showcase/run_showcase.py --models question-order auctions
-    python demos/demos/showcase/run_showcase.py --all                  # every model in the catalogue
-    python demos/demos/showcase/run_showcase.py --param correlation=0  # extra parameter overrides
-    python demos/demos/showcase/run_showcase.py > demos/demos/showcase/output.txt  # capture the output
+    python demos/showcase/run_showcase.py                       # the four models in MODELS
+    python demos/showcase/run_showcase.py --models question-order auctions
+    python demos/showcase/run_showcase.py --all                  # every model in the catalogue
+    python demos/showcase/run_showcase.py --param correlation=0  # extra parameter overrides
+    python demos/showcase/run_showcase.py > demos/showcase/output.txt  # capture the output
 
 For each model it prints: the cognitive question, the quantum mechanism and the classical
 baseline; every parameter with its bounds (all adjustable from Python); the summary; the
 findings; the model-versus-classical comparison; whether a circuit was drawn (and what
 was drawn); and the model's own caveats.  It then saves every figure - including the
-classical-comparison chart and the circuit drawings - into ``demos/demos/showcase/figures/``.
+classical-comparison chart and the circuit drawings - into ``demos/showcase/figures/``.
 
 Options
 -------
 --models SLUG [SLUG ...]   which models to run (default: the four in MODELS)
 --all                      run the whole catalogue
 --param NAME=VALUE [...]   parameter overrides applied to every model that accepts them
---out DIR                  where to write figures (default: demos/demos/showcase/figures)
+--out DIR                  where to write figures (default: demos/showcase/figures)
 --reports                  also write an accessible HTML report per model
 --no-figures               print only, save nothing
 --fast                     skip the parameter sweeps inside each model
@@ -227,7 +227,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"    {shown}")
     print()
     print("Next: `qcog list` for the catalogue, `qcog run <slug> --param name=value`, "
-          "`qcog circuit <slug>`, `streamlit run app/streamlit_app.py`.")
+          "`qcog circuit <slug>`, or the website: `python scripts/build_website.py`.")
     return 0
 
 

@@ -30,12 +30,19 @@ from .figures import (
     line_figure,
     marginal_bars,
     order_effect_figure,
+    payoff_table_figure,
     probability_bars,
     sweep_figure,
 )
 from .style import describe
 
 __all__ = ["structure_checks", "bar_values", "bar_tops"]
+
+
+def _colour_limits(axis) -> tuple[float, float]:
+    """The colour scale of the first image in an axis."""
+    image = axis.images[0]
+    return (float(image.norm.vmin), float(image.norm.vmax))
 
 
 def bar_values(axis) -> list[float]:
@@ -218,6 +225,43 @@ def structure_checks() -> list[dict]:
         "heatmap cells and axis labels match the table",
         cells.shape == (2, 2) and np.allclose(cells, [[3.0, 0.0], [5.0, 1.0]]) and labels == ["C", "D"],
         f"grid {cells.shape}, x labels {labels}",
+    )
+    plt.close(figure)
+
+    # the same table with its two axes named the other way round: the cells must move with them
+    figure = heatmap_figure(frame, row_column="second", column_column="first", value_column="payoff")
+    cells = np.asarray(figure.axes[0].images[0].get_array(), dtype=float)
+    row_labels = [text.get_text() for text in figure.axes[0].get_yticklabels()]
+    column_labels = [text.get_text() for text in figure.axes[0].get_xticklabels()]
+    record(
+        "heatmap follows the row and column columns it is given",
+        cells.shape == (2, 2)
+        and np.allclose(cells, [[3.0, 5.0], [0.0, 1.0]])
+        and row_labels == ["C", "D"]
+        and column_labels == ["C", "D"],
+        f"grid {cells.shape}, rows {row_labels}, columns {column_labels}",
+    )
+    plt.close(figure)
+
+    # 10c. a payoff chart draws both accounts, each from its own column
+    game = pd.DataFrame(
+        [
+            {"first": "C", "second": "C", "quantum_first": 3.0, "classical_first": 3.0, "cooperation": 1.0},
+            {"first": "C", "second": "D", "quantum_first": 5.0, "classical_first": 0.0, "cooperation": 0.0},
+            {"first": "D", "second": "C", "quantum_first": 0.0, "classical_first": 5.0, "cooperation": 0.0},
+            {"first": "D", "second": "D", "quantum_first": 1.0, "classical_first": 1.0, "cooperation": 0.0},
+        ]
+    )
+    figure = payoff_table_figure(game)
+    quantum = np.asarray(figure.axes[0].images[0].get_array(), dtype=float)
+    classical = np.asarray(figure.axes[1].images[0].get_array(), dtype=float)
+    record(
+        "payoff chart draws the quantum and the classical payoff, not the cooperation flag",
+        np.allclose(quantum, [[3.0, 5.0], [0.0, 1.0]])
+        and np.allclose(classical, [[3.0, 0.0], [5.0, 1.0]])
+        and _colour_limits(figure.axes[0]) == _colour_limits(figure.axes[1]),
+        f"quantum {quantum.tolist()} vs classical {classical.tolist()}, shared scale "
+        f"{tuple(_colour_limits(figure.axes[0]))}",
     )
     plt.close(figure)
 

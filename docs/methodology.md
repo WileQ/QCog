@@ -164,7 +164,8 @@ stop working, show the wrong data, or lose its text description without failing 
 | `line_figure` | trajectories (opinions, beliefs, populations) | modules A and D |
 | `histogram_figure` | count distributions (votes, decisions) | cascades, collective judgement |
 | `bloch_sphere` | a qubit belief state and its length | module A |
-| `heatmap_figure` | payoff tables and other tidy grids | module C |
+| `heatmap_figure` | any tidy grid: one value per (row label, column label) pair | games and sweeps |
+| `payoff_table_figure` | a game's payoff to the first player - the quantum account beside the classical one | module C |
 | `classical_comparison_figure` | model versus classical baseline, quantity by quantity | every model |
 | `circuit_figure` | the compiled Qiskit circuit, with an adjustable style | every model with a circuit |
 

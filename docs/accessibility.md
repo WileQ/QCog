@@ -53,9 +53,9 @@ An example of what a description looks like:
 * The HTML report contains `<nav aria-label="Contents">`, one `<h1>`, ordered headings, `<section>`s with
   `aria-labelledby`, a skip link that becomes visible on focus, table `<caption>`s and `scope="col"` headers,
   and `:focus-visible` outlines (3 px, high contrast).
-* Every page of the [website](../website/) is static semantic HTML: a skip link, headings in order, a
-  navigation landmark with `aria-current` on the active page, alternative text on every figure, and visible
-  focus outlines. Each parameter's `description` from its `ParamSpec` is the text used in the documentation, the
+* Every page of the website (`python scripts/build_website.py`) is static semantic HTML: a skip link, headings
+  in order, a navigation landmark with `aria-current` on the active page, alternative text on every figure, and
+  visible focus outlines. Each parameter's `description` from its `ParamSpec` is the text used in the documentation, the
   tables and the generated pages, so the same explanation reaches every reader.
 * Reading options: the site follows the system colour-scheme preference and stays readable with images
   disabled, because every chart appears with its description and with the data table it was drawn from.

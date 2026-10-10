@@ -34,7 +34,7 @@ package with `pip`, they run unchanged as well.
 
 ## Where the same material appears elsewhere
 
-* **[`../website/`](../website/)** - the static site, generated from the library: every model with
+* **the static website** ([`scripts/build_website.py`](../scripts/build_website.py)) - generated from the library: every model with
   its figures, its classical comparison and its circuit drawings, this notebook rendered, the
   examples with their captured output, the comparative study and the documentation. It is published
   on GitHub Pages by `.github/workflows/pages.yml`, and it replaces the Streamlit explorer the

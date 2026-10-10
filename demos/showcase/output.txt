@@ -1,7 +1,7 @@
 Q-Cog showcase
    models: superposition-beliefs, semantic-ambiguity, auctions, collective-judgment
    overrides: none   sweeps: on
-   figures: C:\Users\wikto\Desktop\projects\qollab_hackaton_v1\showcase\figures
+   figures: C:\Users\wikto\Desktop\projects\qollab_hackaton_v1\demos\showcase\figures
 
 ============================================================================================
 Superposition of beliefs versus classical uncertainty
@@ -182,34 +182,34 @@ ADJUSTING IT: Collective judgement: the wisdom of crowds and correlation
     correlation=1.0                                      -> Majority accuracy 0.700 versus Condorcet 0.874 for the same individual accuracy 0.70 (correlation 1.00).
 
 29 files written:
-    showcase\figures\superposition-beliefs__probabilities__sequential_check.png
-    showcase\figures\superposition-beliefs__sweep__decoherence.png
-    showcase\figures\superposition-beliefs__state__coherent.png
-    showcase\figures\superposition-beliefs__state__decohered.png
-    showcase\figures\superposition-beliefs__state__ignorance.png
-    showcase\figures\superposition-beliefs__model_versus_classical_baseline.png
-    showcase\figures\superposition-beliefs__circuit__first_then_probe.png
-    showcase\figures\superposition-beliefs__circuit__probe_then_first.png
-    showcase\reports\superposition-beliefs.html
-    showcase\figures\semantic-ambiguity__probabilities__neutral.png
-    showcase\figures\semantic-ambiguity__probabilities__context_first.png
-    showcase\figures\semantic-ambiguity__probabilities__opposite_context_first.png
-    showcase\figures\semantic-ambiguity__probabilities__sense_resolved_first.png
-    showcase\figures\semantic-ambiguity__model_versus_classical_baseline.png
-    showcase\figures\semantic-ambiguity__circuit__sense.png
-    showcase\reports\semantic-ambiguity.html
-    showcase\figures\auctions__probabilities__value_then_bid.png
-    showcase\figures\auctions__probabilities__bid_then_value.png
-    showcase\figures\auctions__probabilities__no_rival_information.png
-    showcase\figures\auctions__model_versus_classical_baseline.png
-    showcase\figures\auctions__circuit__valuation_then_bid.png
-    showcase\figures\auctions__circuit__bid_then_valuation.png
-    showcase\reports\auctions.html
-    showcase\figures\collective-judgment__marginals__votes.png
-    showcase\figures\collective-judgment__sweep__correlation.png
-    showcase\figures\collective-judgment__distribution.png
-    showcase\figures\collective-judgment__model_versus_classical_baseline.png
-    showcase\figures\collective-judgment__circuit__GHZ_preparation_of_the_correlated_component.png
-    showcase\reports\collective-judgment.html
+    demos\showcase\figures\superposition-beliefs__probabilities__sequential_check.png
+    demos\showcase\figures\superposition-beliefs__sweep__decoherence.png
+    demos\showcase\figures\superposition-beliefs__state__coherent.png
+    demos\showcase\figures\superposition-beliefs__state__decohered.png
+    demos\showcase\figures\superposition-beliefs__state__ignorance.png
+    demos\showcase\figures\superposition-beliefs__model_versus_classical_baseline.png
+    demos\showcase\figures\superposition-beliefs__circuit__first_then_probe.png
+    demos\showcase\figures\superposition-beliefs__circuit__probe_then_first.png
+    demos\showcase\reports\superposition-beliefs.html
+    demos\showcase\figures\semantic-ambiguity__probabilities__neutral.png
+    demos\showcase\figures\semantic-ambiguity__probabilities__context_first.png
+    demos\showcase\figures\semantic-ambiguity__probabilities__opposite_context_first.png
+    demos\showcase\figures\semantic-ambiguity__probabilities__sense_resolved_first.png
+    demos\showcase\figures\semantic-ambiguity__model_versus_classical_baseline.png
+    demos\showcase\figures\semantic-ambiguity__circuit__sense.png
+    demos\showcase\reports\semantic-ambiguity.html
+    demos\showcase\figures\auctions__probabilities__value_then_bid.png
+    demos\showcase\figures\auctions__probabilities__bid_then_value.png
+    demos\showcase\figures\auctions__probabilities__no_rival_information.png
+    demos\showcase\figures\auctions__model_versus_classical_baseline.png
+    demos\showcase\figures\auctions__circuit__valuation_then_bid.png
+    demos\showcase\figures\auctions__circuit__bid_then_valuation.png
+    demos\showcase\reports\auctions.html
+    demos\showcase\figures\collective-judgment__marginals__votes.png
+    demos\showcase\figures\collective-judgment__sweep__correlation.png
+    demos\showcase\figures\collective-judgment__distribution.png
+    demos\showcase\figures\collective-judgment__model_versus_classical_baseline.png
+    demos\showcase\figures\collective-judgment__circuit__GHZ_preparation_of_the_correlated_component.png
+    demos\showcase\reports\collective-judgment.html
 
-Next: `qcog list` for the catalogue, `qcog run <slug> --param name=value`, `qcog circuit <slug>`, `streamlit run app/streamlit_app.py`.
+Next: `qcog list` for the catalogue, `qcog run <slug> --param name=value`, `qcog circuit <slug>`, or the website: `python scripts/build_website.py`.

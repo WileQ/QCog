@@ -64,6 +64,7 @@ def standalone_figures() -> dict:
         line_figure,
         marginal_bars,
         order_effect_figure,
+        payoff_table_figure,
         probability_bars,
         sweep_figure,
     )
@@ -77,6 +78,12 @@ def standalone_figures() -> dict:
     report = order_effect(forward, backward, "A", "B")
     interference = interference_decomposition(state, first, soft)
     sweep_result = sweep("theta", [0.0, 0.5, 1.0, 1.5], lambda value: {"order effect": value / 2, "interference": value})
+    game_frame = __import__("pandas").DataFrame(
+        [{"first": "C", "second": "C", "quantum_first": 3.0, "classical_first": 3.0},
+         {"first": "C", "second": "D", "quantum_first": 5.0, "classical_first": 0.0},
+         {"first": "D", "second": "C", "quantum_first": 0.0, "classical_first": 5.0},
+         {"first": "D", "second": "D", "quantum_first": 1.0, "classical_first": 1.0}]
+    )
     frame = __import__("pandas").DataFrame(
         [{"first": "C", "second": "C", "payoff": 3.0}, {"first": "C", "second": "D", "payoff": 0.0},
          {"first": "D", "second": "C", "payoff": 5.0}, {"first": "D", "second": "D", "payoff": 1.0}]
@@ -99,6 +106,7 @@ def standalone_figures() -> dict:
         ),
         "bloch_sphere": lambda: bloch_sphere(amplitudes(1, 1j, label="belief")),
         "heatmap_figure": lambda: heatmap_figure(frame, title="payoff"),
+        "payoff_table_figure": lambda: payoff_table_figure(game_frame, title="payoff to the first player"),
         "circuit_figure": lambda: circuit_figure(build_sequence_circuit(state, [first, second]), title="A then B"),
         "classical_comparison_figure": lambda: classical_comparison_figure(
             [{"metric": "order effect", "model": 0.29, "baseline": 0.0, "note": ""},

@@ -6,8 +6,8 @@ command or a file path inside this repository.
 | # | Requirement | Status | Where / how to verify |
 | --- | --- | --- | --- |
 | 1 | Uses the Qiskit framework | **Met** | `qiskit.quantum_info.{Statevector, DensityMatrix, Operator, Kraus, partial_trace, schmidt_decomposition}`, `qiskit.circuit.library.{StatePreparation, UnitaryGate}`, `qiskit_aer.AerSimulator`; `qcog/backends/*`, `qcog/circuits/*` |
-| 2 | Follows industry best practices on UI accessibility | **Met** | `docs/accessibility.md`; every figure carries a text description (`qcog.viz`) and every chart a data table; the reports and the generated [website](../website/) have a skip link, captions, `scope` attributes and focus outlines, and the reader's dark-mode preference is respected |
-| 3 | Runs on Qollab's free simulators, including IonQ's | **Met** | `qcog run <model> --backend exact|sampled|aer|aer_exact` needs no credentials; optional `--backend ionq` via `qiskit-ionq` (`demos/examples/03_hardware_and_ionq.py`) |
+| 2 | Follows industry best practices on UI accessibility | **Met** | `docs/accessibility.md`; every figure carries a text description (`qcog.viz`) and every chart a data table; the reports and the generated website have a skip link, captions, `scope` attributes and focus outlines, and the reader's dark-mode preference is respected |
+| 3 | Runs on Qollab's free simulators, including IonQ's | **Met** | `qcog run <model> --backend` takes `exact`, `sampled`, `aer` or `aer_exact` and needs no credentials; optional `--backend ionq` via `qiskit-ionq` (`demos/examples/03_hardware_and_ionq.py`) |
 | 4 | Published and runnable on Qollab.xyz under MIT before the deadline | **Action** | publish the repository on Qollab; licence file is `LICENSE` (MIT); see `docs/qollab_runbook.md` |
 | 5 | MIT licence for outside repositories it relies on | **Met** | all dependencies are Apache-2.0/BSD/MIT (`ATTRIBUTION.md`); no copyleft dependency |
 | 6 | Project page covering what it does, the problem, how to run, how to replicate/extend | **Met** | `docs/project_page.md` (paste-ready), plus `README.md` |
