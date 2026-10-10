@@ -1,0 +1,11 @@
+# Runtime requirements for Q-Cog (mirrors [project.dependencies] in pyproject.toml).
+numpy>=1.26
+scipy>=1.11
+pandas>=2.0
+matplotlib>=3.8
+qiskit>=2.0
+qiskit-aer>=0.15
+
+# Optional extras
+# streamlit>=1.30   # interactive accessibility-first explorer (pip install -e ".[app]")
+# qiskit-ionq>=0.5  # run the same circuits on IonQ's simulator/hardware (pip install -e ".[ionq]")

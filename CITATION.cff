@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you use Q-Cog in research or teaching, please cite it as below."
+title: "Q-Cog: a Qiskit-native quantum cognition simulation and visualization library"
+abstract: >-
+  Q-Cog is a reusable Python library and interactive platform for modelling,
+  simulating, fitting and explaining quantum-probability models of human
+  judgement, decision making and collective behaviour. Every model is executed
+  with Qiskit, exposes a classical baseline for comparison, reports its own
+  limitations, and ships with accessible visualizations.
+authors:
+  - name: "Q-Cog contributors"
+license: MIT
+type: software
+version: 0.1.0
+date-released: "2026-10-11"
+keywords:
+  - quantum cognition
+  - qiskit
+  - quantum probability
+  - decision making
+  - simulation
