@@ -26,6 +26,21 @@ qcog evidence                  # what the library checks about itself
 **Required, not optional:** at least one reference, and at least one caveat that says what the model does not
 establish. The test `test_catalogue_is_complete_and_well_formed` enforces this.
 
+## The two things every model must produce
+
+1. **A classical comparison.** `comparison_rows(result)` returns rows of `metric`, `model`, `baseline` and
+   `note`. The default implementation already covers the analysis dictionaries in the catalogue (order effects,
+   interference, conjunction bounds, entanglements, game payoffs, network statistics, Condorcet, cascades,
+   plurality ...), so most models need nothing; override it when a sharper pair of numbers exists.
+2. **A circuit view, or a reason.** `circuit_designs(result)` returns named Qiskit circuits. The library scans
+   the model's own `build` output for a state and the questions that act on it, draws both orders of a
+   two-question design, uses the entangling circuit for a game, falls back to the sharp limit of an unsharp
+   question, and reports in `circuit_notes(result)` why nothing was drawn (a mixed state, an unsharp question
+   with no sharp counterpart). Add `extra_circuit_designs(result)` for a mechanism the scan cannot see.
+
+Tests in `tests/test_circuits_and_comparison.py` enforce both, and that every parameter of every model can be
+changed from Python.
+
 ## House rules
 
 * **Every claim must be checked by code.** If a model asserts a property, add it to `selftest.py` or to the test
@@ -33,6 +48,7 @@ establish. The test `test_catalogue_is_complete_and_well_formed` enforces this.
 * **Report the classical baseline.** A model that does not say what a classical account predicts is incomplete.
 * **No figure without a description.** Use `qcog.viz` (which attaches the description to the figure) rather
   than calling matplotlib directly.
+* **Never name a model parameter `noise`.** That keyword belongs to the execution layer; use `decoherence`.
 * **Keep the accessibility practices** described in `docs/accessibility.md`: colour-blind-safe palette, no
   information by colour alone, data tables for charts, semantic HTML in reports.
 * **Honesty over impressiveness.** If a classical model fits as well, say so - the information criteria in

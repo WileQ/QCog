@@ -16,7 +16,7 @@ import numpy as np
 
 from .states import CognitiveState
 
-__all__ = ["StepRecord", "SequentialResult", "OutcomeTable"]
+__all__ = ["StepRecord", "SequentialResult", "OutcomeTable", "result_from_diagonal"]
 
 
 @dataclass
@@ -234,3 +234,80 @@ class OutcomeTable:
 
     def __repr__(self) -> str:  # pragma: no cover - cosmetic
         return f"OutcomeTable({len(self.keys)} entries, source={self.source!r})"
+
+
+def result_from_diagonal(density: np.ndarray, measurements, *, backend: str = "exact", label: str = "") -> SequentialResult:
+    """Joint distribution of a set of *commuting* questions, read off the diagonal.
+
+    When every question is diagonal in the same basis - a group of yes/no votes, for
+    instance - the joint distribution is exactly the computational-basis population of
+    each outcome tuple, so there is no need to enumerate one path per answer sequence.
+    The result is identical to what the sequential engine would produce, at a cost that
+    is linear in the number of basis states rather than exponential in the number of
+    questions; the reduction is exact, not an approximation.
+
+    Raises
+    ------
+    ValueError
+        If the questions do not commute with each other diagonally, in which case the
+        caller must use the sequential engine.
+    """
+    import numpy as np
+
+    from .measurement import POVM
+
+    questions = list(measurements)
+    outcomes = {question.name: tuple(question.outcomes) for question in questions}
+    populations = np.real(np.diag(np.asarray(density)))
+    total_states = populations.size
+    # map each basis index to the outcome tuple it realises
+    mapping: dict[int, tuple[str, ...]] = {}
+    for index in range(total_states):
+        entry = []
+        for question in questions:
+            effects = question.effects if isinstance(question, POVM) else question.projectors
+            found = None
+            for position, effect in enumerate(effects):
+                if abs(effect[index, index]) > 0.5:
+                    found = question.outcomes[position]
+                    break
+            if found is None:
+                entry = []
+                break
+            entry.append(found)
+        if entry:
+            mapping[index] = tuple(entry)
+    if not mapping:
+        raise ValueError("the questions are not all diagonal in the computational basis")
+    joint: dict[tuple[str, ...], float] = {}
+    for index, key in mapping.items():
+        joint[key] = joint.get(key, 0.0) + float(populations[index])
+    total = sum(joint.values())
+    if total > 0:
+        joint = {key: value / total for key, value in joint.items()}
+    steps: list[StepRecord] = []
+    prefixes: list[tuple[str, ...]] = [()]
+    for position, question in enumerate(questions):
+        records = []
+        for prefix in prefixes:
+            mass = sum(value for key, value in joint.items() if key[:position] == prefix)
+            conditional = {}
+            for outcome in outcomes[question.name]:
+                branch = sum(
+                    value for key, value in joint.items() if key[: position + 1] == prefix + (outcome,)
+                )
+                conditional[outcome] = float(branch / mass) if mass > 0 else float("nan")
+            records.append(
+                StepRecord(position, question.name, tuple(question.outcomes), prefix, conditional)
+            )
+        steps.extend(records)
+        prefixes = [record.prefix + (outcome,) for record in records for outcome in outcomes[question.name]]
+    return SequentialResult(
+        order=tuple(question.name for question in questions),
+        outcomes=outcomes,
+        joint=joint,
+        steps=steps,
+        states={},
+        backend=backend,
+        metadata={"joint_from": "diagonal of the density matrix (commuting questions)", "label": label},
+    )

@@ -18,6 +18,8 @@ from .style import PALETTE, annotate_figure, color_for, new_figure
 
 __all__ = [
     "probability_bars",
+    "classical_comparison_figure",
+    "circuit_figure",
     "marginal_bars",
     "order_effect_figure",
     "interference_figure",
@@ -345,6 +347,14 @@ def default_figures(model, result) -> dict:
     if analysis.get("interference") is not None:
         figures["interference"] = interference_figure(analysis["interference"])
     for name, sweep_result in (analysis.get("sweeps") or {}).items():
+        table = getattr(sweep_result, "table", None)
+        metrics = [
+            column
+            for column in getattr(table, "columns", [])
+            if column != sweep_result.parameter
+        ]
+        if not metrics or len(table.index) <= 1:
+            continue  # a suppressed or empty sweep has nothing to draw
         figures[f"sweep: {name}"] = sweep_figure(sweep_result)
     for name, state in (analysis.get("states") or {}).items():
         if getattr(state, "dim", 0) == 2:
@@ -374,3 +384,102 @@ def savefig(figure, path, description: bool = False) -> str:
     """Save a figure, optionally appending its text description."""
     figure.savefig(path, bbox_inches="tight")
     return str(path)
+
+def classical_comparison_figure(rows: Sequence[Mapping], title: str | None = None):
+    """Grouped bars: what the model predicts against what a classical account predicts.
+
+    Every Q-Cog model produces these rows, so this chart - the model-versus-classical
+    comparison - is present for all twenty-three of them.  Where the classical value
+    is exactly zero the pair of bars reads as "the classical account is silent here,
+    the model is not".
+    """
+    rows = [row for row in rows if row.get("model") is not None and row.get("baseline") is not None]
+    if not rows:
+        raise ValueError("no comparison rows to plot")
+    labels = [str(row["metric"]) for row in rows]
+    model_values = [float(row["model"]) for row in rows]
+    baseline_values = [float(row["baseline"]) for row in rows]
+    figure = new_figure(max(6.4, 1.1 * len(rows) + 3.0), 3.8)
+    axis = figure.add_subplot(111)
+    positions = np.arange(len(rows))
+    axis.bar(positions - 0.2, model_values, width=0.4, color=PALETTE["blue"], label="quantum model")
+    axis.bar(positions + 0.2, baseline_values, width=0.4, color=PALETTE["grey"],
+             label="classical baseline")
+    for position, (model_value, baseline_value) in enumerate(zip(model_values, baseline_values)):
+        axis.text(position - 0.2, model_value + 0.01, f"{model_value:.3f}", ha="center", fontsize=8)
+        axis.text(position + 0.2, baseline_value + 0.01, f"{baseline_value:.3f}", ha="center", fontsize=8)
+    axis.set_xticks(positions)
+    axis.set_xticklabels(
+        [label if len(label) <= 34 else label[:31] + "..." for label in labels],
+        rotation=18, ha="right", fontsize=9,
+    )
+    axis.set_ylabel("value")
+    axis.set_title(title or "Model versus classical baseline")
+    axis.legend()
+    figure.tight_layout()
+    annotate_figure(
+        figure,
+        "Grouped bar chart comparing the quantum model with the classical baseline on "
+        f"{len(rows)} quantities. "
+        + "; ".join(
+            f"{label}: model {model_value:.3f} versus classical {baseline_value:.3f}"
+            for label, model_value, baseline_value in zip(labels, model_values, baseline_values)
+        )
+        + ". Where the classical value is zero the classical account is forced to predict nothing there, "
+        "so the model's bar is the whole content of that comparison.",
+    )
+    return figure
+
+
+def circuit_figure(design, title: str | None = None, measurements: Sequence | None = None):
+    """Draw a quantum circuit, with a text alternative in place of the diagram.
+
+    ``design`` may be a Qiskit ``QuantumCircuit`` or the ``(state, measurements)`` pair
+    a model declares.  If the matplotlib drawer is unavailable (or the circuit cannot
+    be rendered) the figure degrades to the plain-language description rather than
+    failing, so a report can always be produced.
+    """
+    from qiskit import QuantumCircuit
+
+    from ..circuits.builder import build_sequence_circuit, circuit_statistics, circuit_text_alternative
+
+    if isinstance(design, QuantumCircuit):
+        circuit = design
+    else:
+        state, questions = design
+        circuit = build_sequence_circuit(state, questions)
+        measurements = questions
+    statistics = circuit_statistics(circuit)
+    operations = ", ".join(f"{name} x{count}" for name, count in sorted(statistics["operations"].items()))
+    description = (
+        circuit_text_alternative(circuit, measurements)
+        + f" It contains {statistics['size']} operations at depth {statistics['depth']} on "
+        + f"{statistics['qubits']} qubit(s): {operations}."
+    )
+    try:
+        from qiskit.visualization import circuit_drawer
+
+        figure = circuit_drawer(
+            circuit, output="mpl", scale=0.85, fold=28, initial_state=False, justify="left"
+        )
+    except Exception:  # pragma: no cover - the drawer is optional, the text is not
+        figure = new_figure(7.0, 1.6)
+        axis = figure.add_subplot(111)
+        axis.axis("off")
+        axis.text(0.0, 0.9, title or "quantum circuit", fontsize=11, fontweight="bold", va="top")
+        wrapped = " ".join(
+            description[index : index + 96] for index in range(0, min(len(description), 480), 96)
+        )
+        axis.text(0.0, 0.6, wrapped, fontsize=8, va="top", wrap=True)
+        annotate_figure(figure, description)
+        return figure
+    annotate_figure(
+        figure,
+        description,
+        "Reading the drawing: each horizontal line is one qubit, time runs left to right, and every box is "
+        "labelled with the operation or question it implements. The boxes at the right measure the qubits into "
+        "the classical bits that record each answer.",
+    )
+    if title and getattr(figure, "axes", None):
+        figure.axes[0].set_title(title, fontsize=10)
+    return figure

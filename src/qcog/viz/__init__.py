@@ -8,6 +8,8 @@ be published without an accessible alternative.
 
 from .figures import (
     bloch_sphere,
+    circuit_figure,
+    classical_comparison_figure,
     default_figures,
     heatmap_figure,
     histogram_figure,
@@ -31,6 +33,8 @@ __all__ = [
     "describe",
     "new_figure",
     "bloch_sphere",
+    "circuit_figure",
+    "classical_comparison_figure",
     "default_figures",
     "heatmap_figure",
     "histogram_figure",

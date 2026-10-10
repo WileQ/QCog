@@ -5,6 +5,7 @@ Commands
 ``qcog list``              every model, grouped by module
 ``qcog info SLUG``         one model's documentation
 ``qcog run SLUG``          run a model, with ``--param value`` overrides
+``qcog circuit SLUG``      draw the model's quantum circuit (text, plus PNGs on request)
 ``qcog sweep SLUG``        print the model's own sweeps as tables
 ``qcog fit SLUG DATA``     fit a model to observed frequencies (CSV or JSON)
 ``qcog report``            a full accessible HTML report of every model
@@ -51,6 +52,12 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--format", default="text", choices=("text", "json"))
     run.add_argument("--param", nargs="*", default=[], help="parameter overrides as name=value")
     run.add_argument("--save", default=None, help="directory for an HTML report of this run")
+    run.add_argument("--fast", action="store_true", help="skip the parameter sweeps (headline numbers only)")
+
+    circuit = sub.add_parser("circuit", help="draw the quantum circuit of a model")
+    circuit.add_argument("slug")
+    circuit.add_argument("--param", nargs="*", default=[])
+    circuit.add_argument("--out", default=None, help="directory to write PNG files into")
 
     sweep = sub.add_parser("sweep", help="print the sweeps of a model")
     sweep.add_argument("slug")
@@ -110,11 +117,11 @@ def cmd_info(slug: str) -> int:
 
 
 def cmd_run(slug: str, backend: str, shots: int | None, seed: int | None, fmt: str,
-            overrides: list[str], save: str | None) -> int:
+            overrides: list[str], save: str | None, fast: bool = False) -> int:
     """Run a model and print or save its results."""
     model = MODELS[slug]()
     values = _parse_overrides(overrides)
-    result = model.run(backend=backend, shots=shots, seed=seed, **values)
+    result = model.run(backend=backend, shots=shots, seed=seed, sweeps=not fast, **values)
     if fmt == "json":
         _print(json.dumps(result.to_dict(), indent=2, default=str))
     else:
@@ -126,6 +133,19 @@ def cmd_run(slug: str, backend: str, shots: int | None, seed: int | None, fmt: s
         _print("\nFindings")
         for finding in result.findings:
             _print(f"  * {finding}")
+        rows = result.classical_comparison
+        if rows:
+            _print("\nAgainst the classical baseline: " + result.classical["name"])
+            _print(f"  {'quantity':52s} {'model':>9s} {'classical':>10s}")
+            for row in rows:
+                _print(f"  {row['metric'][:52]:52s} {row['model']:9.3f} {row['baseline']:10.3f}")
+            _print(f"  {result.classical['verdict']}")
+        designs = model.circuit_designs(result)
+        if designs:
+            _print("\nQuantum circuit(s): " + ", ".join(designs))
+            _print(f"  draw them with `qcog circuit {slug}`")
+        for note in model.circuit_notes(result):
+            _print(f"  circuit note: {note}")
         _print("\nLimit what this does not say")
         for caveat in result.caveats:
             _print(f"  - {caveat}")
@@ -140,6 +160,40 @@ def cmd_run(slug: str, backend: str, shots: int | None, seed: int | None, fmt: s
     return 0
 
 
+def cmd_circuit(slug: str, overrides: list[str], out: str | None) -> int:
+    """Describe (and optionally draw) the circuits of a model."""
+    from .circuits.builder import circuit_statistics, circuit_text_alternative
+
+    model = MODELS[slug]()
+    values = _parse_overrides(overrides)
+    result = model.run(sweeps=False, **values)
+    designs = model.circuit_designs(result)
+    if not designs:
+        _print(f"{slug} has no state-vector circuit for these parameters:")
+        for note in model.circuit_notes(result):
+            _print(f"  - {note}")
+        return 0
+    for name, design in designs.items():
+        statistics = circuit_statistics(design)
+        _print(f"=== {name} ===")
+        _print("  " + circuit_text_alternative(design))
+        _print(f"  qubits {statistics['qubits']}, classical bits {statistics['clbits']}, "
+               f"depth {statistics['depth']}, operations {statistics['operations']}")
+    for note in model.circuit_notes(result):
+        _print(f"note: {note}")
+    if out:
+        from .viz import circuit_figure, savefig
+
+        directory = Path(out)
+        directory.mkdir(parents=True, exist_ok=True)
+        for name, design in designs.items():
+            safe = "".join(character if character.isalnum() else "_" for character in name)[:40]
+            path = directory / f"{slug}_{safe}.png"
+            savefig(circuit_figure(design, title=name), path)
+            _print(f"wrote {path}")
+    return 0
+
+
 def cmd_sweep(slug: str, overrides: list[str]) -> int:
     """Print the sweep tables of a model."""
     model = MODELS[slug]()
@@ -150,6 +204,8 @@ def cmd_sweep(slug: str, overrides: list[str]) -> int:
         _print(f"{slug} declares no sweeps; run it with `qcog run {slug}` instead.")
         return 0
     for name, sweep_result in sweeps.items():
+        if len(sweep_result.table.columns) <= 1 or len(sweep_result.table.index) <= 1:
+            continue  # suppressed or empty
         _print(f"\n=== {name} ===")
         _print(sweep_result.table.to_string(index=False))
     return 0
@@ -236,7 +292,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "info":
         return cmd_info(args.slug)
     if args.command == "run":
-        return cmd_run(args.slug, args.backend, args.shots, args.seed, args.format, args.param, args.save)
+        return cmd_run(
+            args.slug, args.backend, args.shots, args.seed, args.format, args.param, args.save,
+            getattr(args, "fast", False),
+        )
+    if args.command == "circuit":
+        return cmd_circuit(args.slug, args.param, args.out)
     if args.command == "sweep":
         return cmd_sweep(args.slug, args.param)
     if args.command == "fit":

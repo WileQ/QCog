@@ -840,6 +840,8 @@ class SequentialCategorization(Model):
     caveats = default_caveats + (
         "The Zeno effect here is a property of repeated measurement; it does not require the labels to carry "
         "new information.",
+        "The exact engine enumerates one path per label sequence (2 per label), so the parameter is capped at "
+        "twelve labels; beyond that the sampled backend gives the same distribution with shot noise.",
     )
     keywords = ("categorisation", "repeated measurement", "Zeno effect", "stabilisation")
     difficulty = "intermediate"
@@ -850,7 +852,9 @@ class SequentialCategorization(Model):
         ParamSpec("label_angle", "float", PI / 2, "Label question angle",
                   "Angle of the category question; pi/2 makes it maximally incompatible with the belief.", 0.0, PI),
         ParamSpec("num_labels", "int", 6, "Number of labels",
-                  "How many category labels are presented in sequence.", 1, 20),
+                  "How many category labels are presented in sequence. The exact engine enumerates one path "
+                  "per label sequence, so the count is capped at twelve; longer sequences can use the "
+                  "sampled backend.", 1, 12),
         ParamSpec("selection_strength", "float", 0.9, "Selection strength",
                   "Sharpness of each categorisation question (1 = fully decisive, 0 = uninformative).",
                   0.05, 1.0),
@@ -932,7 +936,17 @@ class SequentialCategorization(Model):
         return analysis, findings, summary
 
     def context_metadata(self, context: dict) -> dict:
-        return {"num_labels": len(context["questions"])}
+        questions = len(context["questions"])
+        return {
+            "num_labels": questions,
+            "reviewed_paths": 2**questions if questions <= 20 else "many",
+            "cost note": (
+                f"{questions} labels means the exact engine evaluates {2 ** questions} answer paths; "
+                "twelve labels is the practical limit on a laptop"
+                if questions <= 20
+                else "this many labels is beyond exact enumeration; use the sampled backend"
+            ),
+        }
 
 class ConceptualEntanglement(Model):
     """Joint structure that the parts do not contain.

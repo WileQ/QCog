@@ -368,7 +368,7 @@ qcog info semantic-ambiguity
 | --- | --- | --- | --- | --- | --- |
 | `state_angle` | float | 0.5 | 0.0 to 3.141592653589793 | no | Bloch angle of the initial category belief. |
 | `label_angle` | float | 1.5707963267948966 | 0.0 to 3.141592653589793 | no | Angle of the category question; pi/2 makes it maximally incompatible with the belief. |
-| `num_labels` | int | 6 | 1 to 20 | no | How many category labels are presented in sequence. |
+| `num_labels` | int | 6 | 1 to 12 | no | How many category labels are presented in sequence. The exact engine enumerates one path per label sequence, so the count is capped at twelve; longer sequences can use the sampled backend. |
 | `selection_strength` | float | 0.9 | 0.05 to 1.0 | no | Sharpness of each categorisation question (1 = fully decisive, 0 = uninformative). |
 
 **What it does not claim.**
@@ -376,6 +376,7 @@ qcog info semantic-ambiguity
 - This is a model of response probabilities, not a claim about what the brain does.
 - A quantum model only means the data are described by a quantum probability space; classical models may fit equally well, and the classical baseline is reported for that reason.
 - The Zeno effect here is a property of repeated measurement; it does not require the labels to carry new information.
+- The exact engine enumerates one path per label sequence (2 per label), so the parameter is capped at twelve labels; beyond that the sampled backend gives the same distribution with shot noise.
 
 **References.**
 
@@ -468,7 +469,7 @@ qcog info contradictory-beliefs
 | `entanglement` | float | 1.5707963267948966 | 0.0 to 1.5707963267948966 | no | Angle of the entangling gate: 0 is the classical game, pi/2 is maximal entanglement. |
 | `first_strategy` | choice (cooperate (C), defect (D), quantum (Q)) | 'quantum (Q)' | - | no | Strategy used by the row player. |
 | `second_strategy` | choice (cooperate (C), defect (D), quantum (Q)) | 'quantum (Q)' | - | no | Strategy used by the column player. |
-| `noise` | float | 0.0 | 0.0 to 1.0 | no | Depolarising probability applied after the strategy unitaries. |
+| `decoherence` | float | 0.0 | 0.0 to 1.0 | no | Depolarising probability applied after the strategy unitaries. |
 
 **What it does not claim.**
 
@@ -601,7 +602,7 @@ qcog info auctions
 | `shared_context` | float | 1.5707963267948966 | 0.0 to 1.5707963267948966 | no | Strength of the correlation available to both players. |
 | `first_bias` | float | 0.0 | 0.0 to 0.7853981633974483 | no | Small bias of the first player towards one convention. |
 | `second_bias` | float | 0.0 | 0.0 to 0.7853981633974483 | no | Small bias of the second player towards the same convention. |
-| `noise` | float | 0.0 | 0.0 to 1.0 | no | Loss of the shared context before the moves are made. |
+| `decoherence` | float | 0.0 | 0.0 to 1.0 | no | Loss of the shared context before the moves are made. |
 
 **What it does not claim.**
 
@@ -633,12 +634,12 @@ qcog info coordination-games
 
 | parameter | kind | default | bounds | fittable | meaning |
 | --- | --- | --- | --- | --- | --- |
-| `num_agents` | int | 5 | 2 to 10 | no | Population size (2 to 10). |
+| `num_agents` | int | 5 | 2 to 8 | no | Population size. The simulation is dense (2^n amplitudes), so 8 is the practical interactive limit; the classical baselines cover larger networks. |
 | `topology` | choice (ring, line, complete, star, two-communities, random) | 'ring' | - | no | Who talks to whom. |
 | `initial_spread` | float | 1.0 | 0.0 to 1.4 | no | How far apart the agents' initial opinions are. |
 | `interaction_strength` | float | 0.7853981633974483 | 0.0 to 1.5707963267948966 | no | Angle of the partial swap: how much of each opinion is exchanged per encounter. |
 | `decoherence` | float | 0.03 | 0.0 to 0.5 | no | Per-agent depolarising probability per round (forgetting). |
-| `rounds` | int | 8 | 1 to 40 | no | Number of interaction rounds. |
+| `rounds` | int | 8 | 1 to 20 | no | Number of interaction rounds. |
 
 **What it does not claim.**
 
@@ -668,12 +669,12 @@ qcog info quantum-opinion-dynamics
 
 | parameter | kind | default | bounds | fittable | meaning |
 | --- | --- | --- | --- | --- | --- |
-| `num_agents` | int | 6 | 4 to 10 | no | Even population split into two communities. |
+| `num_agents` | int | 6 | 4 to 8 | no | Even population split into two communities. The dense simulation supports up to eight agents interactively. |
 | `community_gap` | float | 1.2 | 0.2 to 1.5 | no | How far apart the two communities start. |
 | `interaction_strength` | float | 0.7853981633974483 | 0.0 to 1.5707963267948966 | no | Partial-swap strength inside each community. |
 | `cross_talk` | float | 0.15 | 0.0 to 1.0 | no | Weight of the single bridge between the communities. |
 | `decoherence` | float | 0.0 | 0.0 to 0.5 | no | Forgetting per round; higher values make positions settle. |
-| `rounds` | int | 10 | 1 to 40 | no | Number of interaction rounds. |
+| `rounds` | int | 10 | 1 to 20 | no | Number of interaction rounds. |
 
 **What it does not claim.**
 

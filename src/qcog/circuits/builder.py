@@ -96,6 +96,11 @@ def measurement_qubits(measurement: Measurement, num_qubits: int) -> tuple[int, 
     """
     question = _require_projective(measurement)
     projectors = question.projectors
+    target = 2**num_qubits
+    if question.dim < target:
+        # A question in a smaller space (three outcomes on two qubits, for instance)
+        # is embedded with zeros on the padding states, which carry no population.
+        projectors = tuple(embed_matrix(projector, target) for projector in projectors)
     trivial = trivial_qubits(projectors, num_qubits)
     required = tuple(qubit for qubit in range(num_qubits) if qubit not in trivial)
     return required or tuple(range(num_qubits))
@@ -121,6 +126,29 @@ def build_state_preparation(state, name: str = "state_prep") -> QuantumCircuit:
     return circuit
 
 
+def _basis_change_for(question: Measurement, support: Sequence[int], total_qubits: int):
+    """``(unitary, blocks)`` for a question that acts on ``support`` qubits.
+
+    Handles both cases: a question whose own space is the support (its basis change is
+    used directly) and a question living in a smaller space (three outcomes on two
+    qubits, say), where the basis change is block-diagonally extended with an identity.
+    The padding states carry no population, and their index is folded into the last
+    outcome so that decoding can never fail on a numerical artefact.
+    """
+    target = 2 ** len(support)
+    projectors = question.projectors
+    if question.dim == target:
+        return pvm_to_unitary(projectors)
+    unitary, blocks = pvm_to_unitary(projectors)
+    padded = embed_matrix(unitary, target)
+    blocks = list(blocks)
+    covered = max(stop for _, _, stop in blocks)
+    if covered < target:
+        index, start, _ = blocks[-1]
+        blocks[-1] = (index, start, target)
+    return padded, blocks
+
+
 def basis_change_gate(measurement: Measurement, num_qubits: int | None = None):
     """``(U_dagger, U, blocks, support)`` for a projective question.
 
@@ -135,7 +163,12 @@ def basis_change_gate(measurement: Measurement, num_qubits: int | None = None):
     total_qubits = num_qubits if num_qubits is not None else num_qubits_for_dim(question.dim)
     support = measurement_qubits(question, total_qubits)
     if len(support) == total_qubits:
-        unitary, blocks = question.basis_unitary()
+        projectors = question.projectors
+        if question.dim < 2**total_qubits:
+            projectors = tuple(embed_matrix(projector, 2**total_qubits) for projector in projectors)
+            unitary, blocks = _basis_change_for(question, support, total_qubits)
+        else:
+            unitary, blocks = pvm_to_unitary(projectors)
     else:
         local = restrict_operators(question.projectors, support, total_qubits)
         unitary, blocks = pvm_to_unitary(local)
@@ -331,6 +364,10 @@ def outcome_from_chunk(measurement: Measurement, support: Sequence[int], chunk: 
     for outcome_index, start, stop in cached:
         if start <= local_index < stop:
             return question.outcomes[outcome_index]
+    if local_index >= question.dim:
+        # The padding state of a question that lives in a smaller space: it carries no
+        # population, so this can only be reached through numerical noise.
+        return question.outcomes[-1]
     raise ValueError(f"measured bits {chunk!r} do not belong to any outcome of {question.name!r}")
 
 

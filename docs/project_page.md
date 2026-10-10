@@ -29,12 +29,17 @@ It contains **23 documented models in four modules**:
 * **D - Groups and networks:** quantum opinion dynamics, polarisation, collective judgement (Condorcet),
   information cascades, deliberation and voting.
 
-Every model reports:
+Every model can be driven and reconfigured from Python, and every run reports:
 
 * what it simulates, as a joint and conditional response distribution;
-* the **classical baseline** for the same situation, computed rather than asserted;
+* the **classical baseline** for the same situation, computed rather than asserted, as a quantity-by-quantity
+  comparison (a table in the CLI, the explorer and the report, and a bar chart in every figure set);
 * an **interference decomposition** wherever it applies (classical term plus interference term);
 * the order-effect measures, including the parameter-free **QQ equality** for two dichotomous questions;
+* a drawing of the **quantum circuit** wherever the model has one - both orders of a two-question design, the
+  entangling circuit for the games, the sharp limit of an unsharp question, the GHZ preparation for the
+  correlated crowd - each carrying a plain-language description, and a written explanation when a drawing is
+  impossible (a mixed state, for example);
 * the **caveats**: what the model does *not* establish.
 
 ## What problem it explores
@@ -71,7 +76,18 @@ qcog evidence                   # the self-check table (about a minute)
 qcog report --out out/qcog_report.html --markdown
 streamlit run app/streamlit_app.py
 python examples/01_first_steps.py
+
+qcog circuit quantum-prisoners-dilemma        # draw the model's circuit
+qcog run question-order --fast                # headline numbers without the sweeps
 ```
+
+### Driving a model from Python
+
+Every parameter of every model can be set from Python, and every parameter's bounds and meaning are declared
+once and reused by the CLI, the explorer, the fitting layer and the documentation. `qcog.core.params.ParamSpec`
+describes them; `model.defaults()` prints them; `model.run(**parameters)` applies them. The test suite runs each
+model with every parameter at both of its bounds (or at every choice) and checks that the results stay
+normalised, so "adjustable in Python" is a tested property rather than a claim.
 
 ### The shortest complete example
 

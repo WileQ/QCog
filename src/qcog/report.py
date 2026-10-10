@@ -99,6 +99,25 @@ def _table(frame, caption: str) -> str:
     )
 
 
+def _comparison_table(result) -> str:
+    """The model-versus-classical table, shown for every model."""
+    rows = result.classical_comparison
+    if not rows:
+        return ""
+    body = "".join(
+        f"<tr><td>{_esc(row['metric'])}</td><td>{row['model']:.4f}</td>"
+        f"<td>{row['baseline']:.4f}</td><td>{_esc(row.get('note', ''))}</td></tr>"
+        for row in rows
+    )
+    return (
+        "<table><caption>Model versus classical baseline</caption><thead><tr>"
+        "<th scope=\"col\">quantity</th><th scope=\"col\">quantum model</th>"
+        "<th scope=\"col\">classical baseline</th><th scope=\"col\">what the baseline is</th>"
+        f"</tr></thead><tbody>{body}</tbody></table>"
+        f"<p class=\"meta\">{_esc(result.classical.get('verdict', ''))}</p>"
+    )
+
+
 def _figure_html(name: str, figure, description: str) -> str:
     """A figure with alt text and an expandable long description."""
     buffer = io.BytesIO()
@@ -163,6 +182,9 @@ def model_html(model, result=None, *, include_figures: bool = True, heading_leve
         + f". Runtime {result.metadata.get('runtime_seconds', 0.0):.4f} s.</p>"
     )
 
+    parts.append(f"<{sub}>Model versus classical baseline</{sub}>")
+    parts.append(_comparison_table(result))
+
     for name, frame in result.tables().items():
         if len(frame.index) > 0:
             parts.append(_table(frame, f"Data table: {name.replace('_', ' ')}"))
@@ -176,6 +198,23 @@ def model_html(model, result=None, *, include_figures: bool = True, heading_leve
         descriptions = text_alternatives(figures)
         for name, figure in figures.items():
             parts.append(_figure_html(name, figure, descriptions.get(name, "")))
+
+    try:
+        instance = _as_instance(model)
+        designs = instance.circuit_designs(result)
+        notes = instance.circuit_notes(result)
+    except Exception:  # pragma: no cover - defensive
+        designs, notes = {}, []
+    if designs or notes:
+        parts.append(f"<{sub}>Circuit view</{sub}>")
+    if designs:
+        items = "".join(f"<li>{_esc(name)}</li>" for name in designs)
+        parts.append(
+            f"<p>The drawn circuits appear above with the other figures:</p><ul>{items}</ul>"
+        )
+    if notes:
+        items = "".join(f"<li>{_esc(note)}</li>" for note in notes)
+        parts.append(f"<ul class=\"meta\">{items}</ul>")
 
     if result.caveats:
         items = "".join(f"<li>{_esc(caveat)}</li>" for caveat in result.caveats)

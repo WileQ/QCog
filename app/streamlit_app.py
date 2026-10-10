@@ -120,6 +120,12 @@ def main() -> None:
         backend = st.selectbox("Backend", ["exact", "sampled", "aer", "aer_exact"])
         shots = st.number_input("Shots", min_value=100, max_value=200000, value=4096, step=100)
         seed = st.number_input("Seed", min_value=0, max_value=10**6, value=7)
+        fast = st.checkbox(
+            "Fast mode (skip the parameter sweeps)",
+            value=True,
+            help="Sweeps re-run the model across a parameter range. They are informative but slower; "
+                 "the headline numbers do not depend on them.",
+        )
         st.subheader("Accessibility")
         dark = st.checkbox("Dark background", value=False)
         large_type = st.checkbox("Larger type", value=False)
@@ -158,7 +164,7 @@ def main() -> None:
     if run or key not in st.session_state:
         with st.spinner("Simulating with Qiskit..."):
             st.session_state[key] = model_class().run(
-                backend=backend, shots=shots, seed=seed, **parameters
+                backend=backend, shots=shots, seed=seed, sweeps=not fast, **parameters
             )
     result = st.session_state[key]
 
@@ -168,6 +174,26 @@ def main() -> None:
     st.markdown("#### What this run shows")
     for finding in result.findings:
         st.markdown(f"- {finding}")
+
+    rows = result.classical_comparison
+    if rows:
+        st.markdown("#### Model versus classical baseline")
+        st.caption(result.classical.get("description", ""))
+        st.dataframe(
+            [{"quantity": row["metric"], "quantum model": row["model"],
+              "classical baseline": row["baseline"], "baseline is": row["note"]} for row in rows],
+            use_container_width=True,
+            hide_index=True,
+        )
+        st.caption(result.classical.get("verdict", ""))
+    designs = model_class().circuit_designs(result)
+    notes = model_class().circuit_notes(result)
+    if designs or notes:
+        st.markdown("#### Circuit view")
+        if designs:
+            st.markdown("Circuits drawn below: " + ", ".join(f"`{name}`" for name in designs))
+        for note in notes:
+            st.markdown(f"- {note}")
 
     analysis = result.analysis
     for name, report in (

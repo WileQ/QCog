@@ -48,10 +48,23 @@ class Engine:
         return get_backend(self.backend, **self.options)
 
     def resolve_noise(self) -> NoiseModel:
-        """The :class:`NoiseModel` implied by :attr:`noise`."""
-        if isinstance(self.noise, NoiseModel) or self.noise is None:
-            return self.noise or NoiseModel()
-        return NoiseModel.from_spec(self.noise)
+        """The :class:`NoiseModel` implied by :attr:`noise`.
+
+        ``noise`` here is the *execution* keyword (a :class:`NoiseSpec` or
+        :class:`NoiseModel`), which is why a model's own decoherence parameter is never
+        called ``noise``.  A wrong type is reported clearly rather than failing later.
+        """
+        if isinstance(self.noise, NoiseModel):
+            return self.noise
+        if self.noise is None:
+            return NoiseModel()
+        if isinstance(self.noise, NoiseSpec):
+            return NoiseModel.from_spec(self.noise)
+        raise TypeError(
+            "the 'noise' keyword belongs to the execution layer and expects a NoiseSpec or a NoiseModel; "
+            f"got {type(self.noise).__name__}. To set a model's own decoherence, use that model's parameter "
+            "(for example decoherence=...)."
+        )
 
     def run(self, state, measurements: Sequence[Measurement], **overrides) -> SequentialResult:
         """Execute one interview and return its joint response distribution."""

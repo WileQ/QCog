@@ -109,6 +109,43 @@ Qubits are little-endian (Qiskit convention): basis index `k` has qubit `q` in s
 `Operator`-free parts of the implementation (projector arithmetic, decompositions) use NumPy directly, with
 Qiskit used wherever a quantum-information object is the natural one.
 
+Two cases the compiler handles explicitly, because both are easy to get wrong:
+
+* **A question that lives in a smaller space.** A three-outcome question (auctions, semantic ambiguity, voting)
+  acts on three basis states of a two-qubit register. Its basis change is extended block-diagonally with an
+  identity, the padding state carries no population, and its index is folded into the last outcome so decoding
+  can never fail on a numerical artefact.
+* **A question that concerns only some qubits.** A question about one subsystem must not measure the others -
+  measuring an uninvolved qubit would collapse amplitudes the question does not care about, which silently
+  destroys coherence. The library detects trivial qubits structurally (an operator acts trivially on a qubit if
+  it is diagonal and independent in that qubit's two tensor axes) and compiles the question onto its own qubits
+  only.
+
+## 5b. Drawing the circuit
+
+`Model.circuit_designs(result)` walks the model's own `build` output, matches each state with the questions of
+the same Hilbert-space dimension, and compiles them; `circuit_figure` draws the result through Qiskit's
+matplotlib drawer and attaches the plain-language description, so the drawing is available to a screen reader
+as well. What a reader can expect:
+
+* two drawings for a two-question design - both orders, because the model is about the difference between them;
+* the entangling circuit for the game models (`J`, the two strategy unitaries, `J†`, the measurement), which is
+  the whole quantum mechanism;
+* one network interaction step for the population models, since the population itself is a density matrix;
+* the GHZ preparation for the correlated-crowd model;
+* the sharp limit of a question that the model itself asks unsharply, with a note saying so;
+* otherwise a note in words - a mixed state, or an unsharp question with no sharp counterpart.
+
+## 5c. The classical comparison as a first-class output
+
+Every run carries `result.classical`: the baseline's name and description, a list of rows (`metric`, `model`,
+`baseline`, `note`) and a verdict sentence. The rows come from the model's own numbers, so they cannot drift from
+the simulation, and they are rendered as a table in the CLI, the explorer and the report, and as a grouped bar
+chart in every figure set. Rows whose classical value is exactly zero are the strongest form: a classical
+account is *forced* to predict zero there, so the model's bar is the whole content of that comparison
+(an order effect, an interference contribution, a conjunction excess, a sure-thing violation, a framing effect,
+a Condorcet-cycle certificate).
+
 ## 6. Statistical layer
 
 `qcog.core.metrics`: total variation, KL and Jensen-Shannon divergence, Hellinger and Bhattacharyya distances,

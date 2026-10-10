@@ -27,6 +27,7 @@ from ..core.params import ParamSpec
 from ..core.states import amplitudes
 from ..experiments.population import (
     QuantumOpinionModel,
+    opinion_from_angle,
     independent_vote_distribution,
     topology_adjacency,
     vote_distribution,
@@ -93,7 +94,10 @@ class QuantumOpinionDynamics(PopulationModel):
     difficulty = "advanced"
 
     params = (
-        ParamSpec("num_agents", "int", 5, "Number of agents", "Population size (2 to 10).", 2, 10),
+        ParamSpec("num_agents", "int", 5, "Number of agents",
+                  "Population size. The simulation is dense (2^n amplitudes), so 8 is the practical "
+                  "interactive limit; the classical baselines cover larger networks.",
+                  2, 8),
         ParamSpec("topology", "choice", "ring", "Network topology", "Who talks to whom.",
                   choices=("ring", "line", "complete", "star", "two-communities", "random")),
         ParamSpec("initial_spread", "float", 1.0, "Initial diversity",
@@ -102,7 +106,7 @@ class QuantumOpinionDynamics(PopulationModel):
                   "Angle of the partial swap: how much of each opinion is exchanged per encounter.", 0.0, PI / 2),
         ParamSpec("decoherence", "float", 0.03, "Decoherence",
                   "Per-agent depolarising probability per round (forgetting).", 0.0, 0.5),
-        ParamSpec("rounds", "int", 8, "Rounds", "Number of interaction rounds.", 1, 40),
+        ParamSpec("rounds", "int", 8, "Rounds", "Number of interaction rounds.", 1, 20),
     )
 
     def build(self, **parameters) -> dict:
@@ -125,7 +129,10 @@ class QuantumOpinionDynamics(PopulationModel):
         final = results["opinions"]["final"]
         metrics = model.consensus_metrics()
         classical_trajectory = self.classical_trajectory(
-            context["opinions"], model.adjacency, len(history) - 1, kind="de-groot"
+            [opinion_from_angle(angle) for angle in context["opinions"]],
+            model.adjacency,
+            len(history) - 1,
+            kind="de-groot",
         )
         classical_final = np.array(
             [classical_trajectory["series"][f"agent {index + 1}"][-1]
@@ -161,14 +168,16 @@ class QuantumOpinionDynamics(PopulationModel):
             "metrics": metrics,
             "votes": results["votes"],
             "sweeps": {
+                # Five points each: the dense population simulation is the most
+                # expensive model in the catalogue, so the sweeps stay small.
                 "decoherence": sweep(
                     "decoherence",
-                    [round(value, 2) for value in np.linspace(0.0, 0.5, 9)],
+                    [round(value, 2) for value in np.linspace(0.0, 0.5, 5)],
                     lambda value: _opinion_metrics(context, float(value), "decoherence"),
                 ),
                 "interaction_strength": sweep(
                     "interaction_strength",
-                    [round(value, 3) for value in np.linspace(0.0, PI / 2, 9)],
+                    [round(value, 3) for value in np.linspace(0.0, PI / 2, 5)],
                     lambda value: _opinion_metrics(context, float(value), "strength"),
                 ),
             },
@@ -176,8 +185,20 @@ class QuantumOpinionDynamics(PopulationModel):
         return analysis, findings, summary
 
     def context_metadata(self, context: dict) -> dict:
-        return {"num_agents": int(context["parameters"]["num_agents"]),
-                "topology": context["parameters"]["topology"]}
+        parameters = context["parameters"]
+        agents = int(parameters["num_agents"])
+        rounds = int(parameters["rounds"])
+        cost = 2**agents * agents * rounds
+        note = (
+            f"dense simulation of {agents} agents ({2**agents} amplitudes) over {rounds} rounds; "
+            "a full graph and eight agents is the practical interactive limit"
+        )
+        return {
+            "num_agents": agents,
+            "topology": parameters["topology"],
+            "estimated work": cost,
+            "cost note": note,
+        }
 
 
 def _opinion_metrics(context: dict, value: float, kind: str) -> dict:
@@ -237,7 +258,9 @@ class Polarization(PopulationModel):
     difficulty = "advanced"
 
     params = (
-        ParamSpec("num_agents", "int", 6, "Number of agents", "Even population split into two communities.", 4, 10),
+        ParamSpec("num_agents", "int", 6, "Number of agents",
+                  "Even population split into two communities. The dense simulation supports up to eight "
+                  "agents interactively.", 4, 8),
         ParamSpec("community_gap", "float", 1.2, "Community gap",
                   "How far apart the two communities start.", 0.2, 1.5),
         ParamSpec("interaction_strength", "float", PI / 4, "Within-community interaction",
@@ -246,7 +269,7 @@ class Polarization(PopulationModel):
                   "Weight of the single bridge between the communities.", 0.0, 1.0),
         ParamSpec("decoherence", "float", 0.0, "Decoherence",
                   "Forgetting per round; higher values make positions settle.", 0.0, 0.5),
-        ParamSpec("rounds", "int", 10, "Rounds", "Number of interaction rounds.", 1, 40),
+        ParamSpec("rounds", "int", 10, "Rounds", "Number of interaction rounds.", 1, 20),
     )
 
     def build(self, **parameters) -> dict:
@@ -285,7 +308,7 @@ class Polarization(PopulationModel):
         within_b = float(final[half:].mean())
         gap_final = abs(within_b - within_a)
         gap_initial = abs(np.mean(context["opinions"][half:]) - np.mean(context["opinions"][:half]))
-        bounded = np.asarray(context["opinions"], dtype=float)
+        bounded = np.asarray([opinion_from_angle(angle) for angle in context["opinions"]], dtype=float)
         bounded_history = [bounded.copy()]
         for _ in range(len(history) - 1):
             bounded = bounded_confidence_step(bounded, 0.35, context["adjacency"])
@@ -338,7 +361,7 @@ class Polarization(PopulationModel):
             "sweeps": {
                 "cross talk": sweep(
                     "cross_talk",
-                    [round(value, 2) for value in np.linspace(0.0, 1.0, 9)],
+                    [round(value, 2) for value in np.linspace(0.0, 1.0, 5)],
                     lambda value: _polarization_metrics(context, float(value)),
                 )
             },
@@ -346,7 +369,14 @@ class Polarization(PopulationModel):
         return analysis, findings, summary
 
     def context_metadata(self, context: dict) -> dict:
-        return {"num_agents": len(context["opinions"]), "topology": "two communities"}
+        return {
+            "num_agents": len(context["opinions"]),
+            "topology": "two communities",
+            "cost note": (
+                f"dense simulation of {len(context['opinions'])} agents; the classical bounded-confidence "
+                "baseline is reported alongside for comparison"
+            ),
+        }
 
 
 def _polarization_metrics(context: dict, cross_talk: float) -> dict:
@@ -436,8 +466,15 @@ class CollectiveJudgment(PopulationModel):
         return {"state": state, "votes": votes, "parameters": dict(parameters)}
 
     def simulate(self, context: dict, engine) -> dict:
+        # The judges' vote questions are all diagonal in the same basis, so the joint
+        # distribution is exactly the diagonal of the group state: no need to enumerate
+        # one path per answer sequence (which would be 2**judges).
+        from ..core.results import result_from_diagonal
+
         return {
-            "votes": engine.run(context["state"], context["votes"]),
+            "votes": result_from_diagonal(
+                context["state"].density, context["votes"], label="collective judgement"
+            ),
             "distribution": vote_distribution(context["state"].density, len(context["votes"])),
         }
 
@@ -505,6 +542,30 @@ class CollectiveJudgment(PopulationModel):
             "sweeps": {"correlation": sweep_result},
         }
         return analysis, findings, summary
+
+    def extra_circuit_designs(self, result) -> dict:
+        """The GHZ preparation that creates the correlation the model is about.
+
+        The model mixes this correlated state with a product state, which is a density
+        matrix and is evaluated exactly; the drawing shows the preparation of the
+        correlated component, with the angle taken from the model's own accuracy.
+        """
+        from qiskit import QuantumCircuit
+
+        count = int(result.parameters["num_agents"])
+        angle = float(np.arcsin(np.sqrt(float(result.parameters["individual_accuracy"]))))
+        circuit = QuantumCircuit(count, name="ghz preparation")
+        circuit.ry(2.0 * angle, 0)
+        for qubit in range(count - 1):
+            circuit.cx(qubit, qubit + 1)
+        return {"GHZ preparation of the correlated component": circuit}
+
+    def circuit_notes(self, result) -> list[str]:
+        notes = super().circuit_notes(result)
+        return notes + [
+            "the correlated component is a GHZ state - the drawing shows how it is prepared - and the model "
+            "then mixes it with a product state, which is a density matrix and is evaluated exactly"
+        ]
 
     def context_metadata(self, context: dict) -> dict:
         return {"num_agents": len(context["votes"])}
@@ -588,7 +649,23 @@ class InformationCascades(Model):
     def build(self, **parameters) -> dict:
         accuracy = float(parameters["signal_accuracy"])
         signal_angle = 2.0 * np.arcsin(np.sqrt(accuracy))
-        return {"signal_angle": signal_angle, "parameters": dict(parameters)}
+        # The first agent's design is built here as well as inside the simulation, so
+        # that the two questions each agent answers can be drawn as a circuit: the
+        # private signal and the social context, asked of one belief state.
+        first_agent = amplitudes(
+            np.cos(signal_angle / 2),
+            np.exp(1j * float(parameters["phase"])) * np.sin(signal_angle / 2),
+            label="first agent's belief",
+        )
+        return {
+            "signal_angle": signal_angle,
+            "state": first_agent,
+            "private signal": measurement_for(signal_angle, "private signal", ("supportive", "against"),
+                                              "the agent's own evidence"),
+            "social context": measurement_for(np.pi / 2, "social context", ("crowd adopts", "crowd rejects"),
+                                              "the observed behaviour of the group"),
+            "parameters": dict(parameters),
+        }
 
     def simulate(self, context: dict, engine) -> dict:
         from ..core.engine import run_sequence

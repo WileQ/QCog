@@ -23,7 +23,7 @@ from typing import Callable, Sequence
 
 import numpy as np
 
-from ..core.instruments import Channel, depolarizing_channel, per_qubit_channel
+from ..core.instruments import Channel, depolarizing_channel
 from ..core.states import CognitiveState, as_state
 
 __all__ = [
@@ -31,6 +31,15 @@ __all__ = [
     "edge_list",
     "partial_swap",
     "two_qubit_unitary",
+    "apply_two_qubit_gate",
+    "apply_single_qubit_operator",
+    "apply_single_qubit_channel",
+    "apply_partial_swap",
+    "apply_local_depolarising",
+    "embed_local_factor",
+    "local_opinions",
+    "opinion_from_angle",
+    "local_entropies",
     "QuantumOpinionModel",
     "vote_distribution",
     "MAX_AGENTS",
@@ -121,6 +130,191 @@ def two_qubit_unitary(gate: np.ndarray, adjacency: np.ndarray, num_agents: int) 
     return np.asarray(gate, dtype=complex)
 
 
+def _qubit_axes(qubit: int, num_agents: int) -> tuple[int, int]:
+    """Row and column axes of one qubit inside a ``(2,)*(2n)`` density tensor."""
+    row = num_agents - 1 - qubit
+    return row, row + num_agents
+
+
+def apply_single_qubit_operator(density: np.ndarray, operator: np.ndarray, qubit: int, num_agents: int) -> np.ndarray:
+    """Apply a one-qubit operator to a density matrix by tensor contraction.
+
+    ``rho -> O rho O^dagger``, contracting only the qubit that ``O`` touches. This
+    is the primitive that makes per-qubit noise cheap: composing per-qubit Kraus
+    operators into whole-register ones would cost ``4**n`` operators.
+    """
+    operator = np.asarray(operator, dtype=complex)
+    total = 2**num_agents
+    if operator.shape != (2, 2):
+        raise ValueError("the operator must be a 2x2 matrix")
+    tensor = density.reshape([2] * (2 * num_agents))
+    row, column = _qubit_axes(qubit, num_agents)
+    tensor = np.tensordot(operator, tensor, axes=([1], [row]))
+    tensor = np.moveaxis(tensor, 0, row)
+    tensor = np.tensordot(operator.conj(), tensor, axes=([1], [column]))
+    tensor = np.moveaxis(tensor, 0, column)
+    return tensor.reshape(total, total)
+
+
+def apply_single_qubit_channel(density: np.ndarray, kraus: Sequence[np.ndarray], qubit: int, num_agents: int) -> np.ndarray:
+    """Apply a one-qubit channel (given by Kraus operators) to one qubit of a register."""
+    total = 2**num_agents
+    out = np.zeros((total, total), dtype=complex)
+    for operator in kraus:
+        out += _conjugate_local(density, np.asarray(operator, dtype=complex), qubit, num_agents)
+    return out
+
+
+def _conjugate_local(density: np.ndarray, operator: np.ndarray, qubit: int, num_agents: int) -> np.ndarray:
+    """``O rho O^dagger`` for a one-qubit ``O`` (the summand of a local channel)."""
+    tensor = density.reshape([2] * (2 * num_agents))
+    row, column = _qubit_axes(qubit, num_agents)
+    tensor = np.tensordot(operator, tensor, axes=([1], [row]))
+    tensor = np.moveaxis(tensor, 0, row)
+    tensor = np.tensordot(operator.conj(), tensor, axes=([1], [column]))
+    tensor = np.moveaxis(tensor, 0, column)
+    return tensor.reshape(2**num_agents, 2**num_agents)
+
+
+def embed_local_factor(reduced: np.ndarray, local: np.ndarray, qubit: int, num_agents: int) -> np.ndarray:
+    """Insert a one-qubit factor back into an ``(n-1)``-qubit operator.
+
+    Used for the fast depolarising path: ``rho -> (1-p) rho + p Tr_q(rho) (x) I/2``
+    needs the traced-out operator placed back on the qubit's two tensor axes.
+    """
+    size = 2 ** (num_agents - 1)
+    if reduced.shape != (size, size):
+        raise ValueError("the reduced operator does not match the register size")
+    if local.shape != (2, 2):
+        raise ValueError("the local factor must be 2x2")
+    left = 2 ** (num_agents - 1 - qubit)
+    right = 2**qubit
+    blocks = reduced.reshape(left, right, left, right)
+    # ``blocks`` has axes (row/higher, row/lower, column/higher, column/lower); the
+    # inserted qubit goes between the two pairs on each side, in the same order, which
+    # is what the little-endian reshape needs
+    expanded = np.einsum("ijkl,ab->iajkbl", blocks, np.asarray(local, dtype=complex))
+    return expanded.reshape(2**num_agents, 2**num_agents)
+
+
+def apply_local_depolarising(density: np.ndarray, probability: float, qubit: int, num_agents: int) -> np.ndarray:
+    """``rho -> (1 - p) rho + p Tr_q(rho) (x) I/2`` in three tensor passes.
+
+    Mathematically identical to applying the four Kraus operators of the qubit
+    depolarising channel, but it never composes them into whole-register operators,
+    which is what keeps ten-agent runs fast.
+    """
+    if probability <= 0:
+        return density
+    if not 0.0 <= probability <= 1.0:
+        raise ValueError("probability must lie in [0, 1]")
+    tensor = density.reshape([2] * (2 * num_agents))
+    row, column = _qubit_axes(qubit, num_agents)
+    traced = np.diagonal(tensor, axis1=row, axis2=column).sum(axis=-1)
+    reduced = traced.reshape(2 ** (num_agents - 1), 2 ** (num_agents - 1))
+    mixed = embed_local_factor(reduced, np.eye(2, dtype=complex) / 2.0, qubit, num_agents)
+    return (1.0 - probability) * density + probability * mixed
+
+
+def opinion_from_angle(angle: float) -> float:
+    """The opinion a Bloch angle corresponds to: ``p(in favour) - p(against) = -cos(theta)``.
+
+    The classical baselines in Module D average *opinions*, so the initial angles have
+    to be converted before they are handed to a classical model; otherwise the two
+    sides of a comparison would be in different units.
+    """
+    return float(-np.cos(angle))
+
+
+def local_opinions(density: np.ndarray, num_agents: int) -> list[float]:
+    """Opinion of every agent: ``p(in favour) - p(against)``, positive meaning in favour.
+
+    Read off the diagonal, one dot product per agent, which is what makes a ten-agent
+    trajectory cheap.  The sign convention matches :meth:`QuantumOpinionModel.opinion_of`.
+    """
+    populations = np.real(np.diag(density))
+    indices = np.arange(populations.size)
+    return [
+        float(np.dot(populations, 2 * ((indices >> qubit) & 1) - 1))
+        for qubit in range(num_agents)
+    ]
+
+
+def local_entropies(density: np.ndarray, num_agents: int) -> list[float]:
+    """Von Neumann entropy of every single agent, from its two-by-two reduced state."""
+    populations = np.real(np.diag(density))
+    indices = np.arange(populations.size)
+    entropies = []
+    for qubit in range(num_agents):
+        mask = ((indices >> qubit) & 1) == 0
+        zero = float(populations[mask].sum())
+        one = float(populations[~mask].sum())
+        # the off-diagonal of the reduced state is the sum of the coherences that
+        # connect the two values of this qubit with every other qubit fixed
+        flipped = indices ^ (1 << qubit)
+        coherence = complex(np.sum(density[indices, flipped][mask]))
+        block = np.array([[zero, coherence], [np.conj(coherence), one]], dtype=complex)
+        eigenvalues = np.linalg.eigvalsh((block + block.conj().T) / 2.0)
+        eigenvalues = eigenvalues[eigenvalues > 1e-12]
+        entropies.append(float(-np.sum(eigenvalues * np.log2(eigenvalues))) if eigenvalues.size else 0.0)
+    return entropies
+
+
+def apply_partial_swap(density: np.ndarray, strength: float, left: int, right: int, num_agents: int) -> np.ndarray:
+    """Apply ``exp(i * strength * SWAP)`` to a pair, exploiting its structure.
+
+    Writing the gate as ``c I + i s SWAP``, the conjugation expands into four terms in
+    which ``SWAP`` acts as an axis exchange, so no matrix multiplication is needed:
+    ``c^2 rho - i c s (rho S) + i c s (S rho) + s^2 (S rho S)``. The result is
+    accumulated into a preallocated buffer, because this gate is applied once per edge
+    per round and allocation would dominate a ten-agent run.
+    """
+    cosine, sine = float(np.cos(strength)), float(np.sin(strength))
+    total = 2**num_agents
+    tensor = density.reshape([2] * (2 * num_agents))
+    row_left, column_left = _qubit_axes(left, num_agents)
+    row_right, column_right = _qubit_axes(right, num_agents)
+    swapped_rows = np.swapaxes(tensor, row_left, row_right)
+    swapped_columns = np.swapaxes(tensor, column_left, column_right)
+    out = np.empty_like(tensor)
+    np.multiply(tensor, cosine * cosine, out=out)
+    if sine != 0.0:
+        out += (-1j * cosine * sine) * swapped_columns
+        out += (1j * cosine * sine) * swapped_rows
+        out += (sine * sine) * np.swapaxes(swapped_rows, column_left, column_right)
+    return out.reshape(total, total)
+
+
+def apply_two_qubit_gate(
+    density: np.ndarray, gate: np.ndarray, left: int, right: int, num_agents: int
+) -> np.ndarray:
+    """Apply a two-qubit gate to a density matrix by direct tensor contraction.
+
+    Building the full ``2**n x 2**n`` unitary and multiplying is correct but costs
+    ``O(8**n)``; contracting only the two qubits the gate touches costs ``O(4**n)``,
+    which is what makes a ten-agent dense simulation practical.
+
+    Conventions: qubits are little-endian, and the gate's own basis index is
+    ``2 * bit(higher qubit) + bit(lower qubit)`` - the same convention the circuit
+    construction uses, so a gate can be drawn and applied interchangeably.
+    """
+    gate = np.asarray(gate, dtype=complex)
+    total = 2**num_agents
+    if density.shape != (total, total):
+        raise ValueError("the density matrix does not match the register size")
+    if gate.shape != (4, 4):
+        raise ValueError("the gate must be a two-qubit unitary")
+    tensor = density.reshape([2] * (2 * num_agents))
+    row_high, row_low = sorted((num_agents - 1 - left, num_agents - 1 - right))
+    col_high, col_low = row_high + num_agents, row_low + num_agents
+    blocks = gate.reshape(2, 2, 2, 2)
+    tensor = np.tensordot(blocks, tensor, axes=([2, 3], [row_high, row_low]))
+    tensor = np.moveaxis(tensor, [0, 1], [row_high, row_low])
+    tensor = np.tensordot(blocks.conj(), tensor, axes=([2, 3], [col_high, col_low]))
+    tensor = np.moveaxis(tensor, [0, 1], [col_high, col_low])
+    return tensor.reshape(total, total)
+
+
 def _pair_unitary(gate: np.ndarray, left: int, right: int, num_agents: int) -> np.ndarray:
     """``gate`` acting on qubits ``left`` and ``right`` (little-endian indices)."""
     if not 0 <= left < right < num_agents:
@@ -131,14 +325,16 @@ def _pair_unitary(gate: np.ndarray, left: int, right: int, num_agents: int) -> n
         matrix = np.zeros((total, total), dtype=complex)
         for index in range(total):
             bits = [(index >> qubit) & 1 for qubit in range(num_agents)]
-            sub = ((bits[left]) << 1) | bits[right]
+            # local index = 2 * bit(higher qubit) + bit(lower qubit), matching the
+            # adjacent case so that both branches act on the same pair convention
+            sub = (bits[right] << 1) | bits[left]
             for out in range(4):
                 amplitude = gate[out, sub]
                 if amplitude == 0:
                     continue
                 new_bits = list(bits)
-                new_bits[left] = (out >> 1) & 1
-                new_bits[right] = out & 1
+                new_bits[right] = (out >> 1) & 1
+                new_bits[left] = out & 1
                 target = sum(bit << qubit for qubit, bit in enumerate(new_bits))
                 matrix[target, index] = amplitude
         return matrix
@@ -194,7 +390,12 @@ class QuantumOpinionModel:
         return as_state(vector, label="population state")
 
     def opinion_of(self, agent: int) -> float:
-        """Bloch ``z`` component of one agent: negative is "against", positive "in favour"."""
+        """One agent's opinion: ``p(in favour) - p(against)``, positive meaning in favour.
+
+        ``|1>`` is "in favour", so this is Bloch ``-z``; the sign convention is stated
+        here once because the trajectories, the consensus metrics and the vote
+        distribution all read their opinions from it.
+        """
         reduced = self.state.partial_trace([agent], dims=[2] * self.num_agents)
         return float(np.real(reduced.density[1, 1] - reduced.density[0, 0]))
 
@@ -214,25 +415,41 @@ class QuantumOpinionModel:
         )
 
     # ------------------------------------------------------------- interaction
+    @property
+    def density(self) -> np.ndarray:
+        """The current density matrix of the whole population."""
+        return self.state.density
+
+    def _set_density(self, density: np.ndarray) -> None:
+        from ..core.states import CognitiveState
+
+        self.state = CognitiveState.from_density(density, label="population state")
+
     def step(self) -> None:
         """One round of coherent opinion exchange followed by decoherence."""
+        density = self.density
         for left, right in edge_list(self.adjacency):
-            gate = partial_swap(self.interaction_strength * self.adjacency[left, right])
-            unitary = _pair_unitary(gate, left, right, self.num_agents)
-            self.state = self.state.evolve(unitary)
+            density = apply_partial_swap(
+                density,
+                self.interaction_strength * self.adjacency[left, right],
+                left,
+                right,
+                self.num_agents,
+            )
         if self.decoherence > 0:
-            channel = per_qubit_channel(depolarizing_channel, self.num_agents, p=self.decoherence)
-            self.state = self.state.apply_channel(channel.kraus)
+            for qubit in range(self.num_agents):
+                density = apply_local_depolarising(density, self.decoherence, qubit, self.num_agents)
+        self._set_density(density)
 
     def run(self, steps: int, record: bool = True) -> dict:
         """Run ``steps`` rounds and return the opinion history."""
-        history = [self.opinions_now()]
-        entropies = [self.local_entropy()]
+        history = [local_opinions(self.density, self.num_agents)]
+        entropies = [float(np.mean(local_entropies(self.density, self.num_agents)))]
         for _ in range(int(steps)):
             self.step()
             if record:
-                history.append(self.opinions_now())
-                entropies.append(self.local_entropy())
+                history.append(local_opinions(self.density, self.num_agents))
+                entropies.append(float(np.mean(local_entropies(self.density, self.num_agents))))
         return {"history": history, "entropy": entropies, "final": self.opinions_now()}
 
     # ------------------------------------------------------------ aggregation

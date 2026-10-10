@@ -29,6 +29,7 @@ __all__ = [
     "condorcet_jury_probability",
     "bayesian_cascade",
     "ClassicalBaseline",
+    "symmetric_mixed_equilibrium",
 ]
 
 
@@ -298,6 +299,36 @@ def bayesian_cascade(
         "posterior": posterior_first if signal == first_label else 1 - posterior_first,
         "cascade_broken_by_private_signal": not follows_cascade,
         "decision_counts": {first_label: counts_first, second_label: counts_second},
+    }
+
+
+def symmetric_mixed_equilibrium(payoff_matrix) -> dict:
+    """Symmetric mixed-strategy equilibrium of a two-by-two symmetric game.
+
+    With payoffs ``[[R, S], [T, P]]`` (row = own move, cooperate first), a symmetric
+    mixture that plays the first action with probability ``q`` makes the opponent
+    indifferent when ``q (R - T - S + P) = P - S``.  Returns the equilibrium
+    probability, the value of the game for both players and the payoff-dominant
+    pure profile, which is what the quantum models are compared against.
+    """
+    matrix = np.asarray(payoff_matrix, dtype=float)
+    if matrix.shape != (2, 2):
+        raise ValueError("the payoff matrix must be 2x2")
+    reward, sucker, temptation, punishment = matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1]
+    denominator = (reward - temptation) - (sucker - punishment)
+    if abs(denominator) < 1e-12:
+        probability = 0.0 if temptation > reward else 1.0
+    else:
+        probability = float(np.clip((punishment - sucker) / denominator, 0.0, 1.0))
+    value = probability * (probability * reward + (1 - probability) * sucker) + (1 - probability) * (
+        probability * temptation + (1 - probability) * punishment
+    )
+    return {
+        "first action probability": probability,
+        "value": float(value),
+        "mutual first action": float(reward),
+        "mutual second action": float(punishment),
+        "cooperation probability": float(probability * probability),
     }
 
 

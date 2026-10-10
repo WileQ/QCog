@@ -47,11 +47,25 @@ model, experiment or dataset. Q-Cog provides **one workflow for all of them**:
 | Configure the model | states, questions, measurement order, parameters | one parameter schema that drives the CLI, the UI, the fitting layer and the docs |
 | Execute with Qiskit | exact, sampled, or compiled circuits | four interchangeable backends, cross-checked against each other |
 | Visualise | state, interference, networks, trajectories | accessible figures with mandatory text descriptions |
+| Look at the circuit | how the model becomes a Qiskit circuit | a drawing for every model that has one, and a written reason when it does not |
 | Explain | classical baseline, predictions, limitations | rule-based text generated from the numbers, plus an explicit caveat list |
 
-The defining feature is that **every prediction is paired with what a classical account would say**, and every
-model ships with the checks that decide between them (the law of total probability, the QQ equality, the
-classical conjunction bound, Condorcet's theorem, the classical Nash equilibrium, ...).
+Two things hold for **all twenty-three models**, and both are enforced by tests:
+
+* **Every model is paired with a classical baseline.** Each run produces a structured comparison - the same
+  quantity computed by the model and by the classical account of the same situation, side by side - rendered as
+  a table in the CLI, app and report, and as a bar chart in every figure set. Where a classical model is *forced*
+  to predict zero (an order effect, an interference term, a conjunction excess) the baseline row is exactly
+  zero, so the comparison is the content of the model rather than decoration.
+* **Every model that can be drawn as a circuit is drawn as one.** The scan finds the state and the questions in
+  the model's own design, compiles them onto the qubits they actually touch and draws the result - with both
+  orders of a two-question design, with the entangling circuit for the game models, with the sharp limit of a
+  model that uses unsharp questions, and with the GHZ preparation for the correlated-crowd model. Where a
+  drawing is impossible the report says why in words (a mixed state, an unsharp question with no sharp
+  counterpart) instead of leaving a gap.
+
+The checks that decide between the accounts are included too: the law of total probability, the QQ equality, the
+classical conjunction bound, Condorcet's theorem, the classical mixed-strategy equilibrium.
 
 ## Install
 
@@ -113,9 +127,18 @@ model = get_model("question-order")
 result = model.run()                       # exact
 result = model.run(backend="aer", shots=20000, seed=7)     # on a compiled circuit
 result = model.run(decoherence=0.15)       # with noise
+result = model.run(sweeps=False)           # fast: headline numbers only
 print(result.summary)
 for finding in result.findings: print("-", finding)
 
+# what a classical account of the same situation predicts, quantity by quantity
+for row in result.classical_comparison:
+    print(f"{row['metric']}: model {row['model']:.3f} vs classical {row['baseline']:.3f}")
+
+# the circuit, drawn with Qiskit's drawer and carrying its own text description
+for name, circuit in model.circuit_designs(result).items():
+    print(name, circuit.num_qubits, "qubits")
+figures = model.figures(result)            # includes the comparison chart and the circuits
 write_model_report(model, result, "out/")  # accessible HTML + PNGs
 ```
 
@@ -180,6 +203,9 @@ qcog run conjunction-fallacy --param teller_angle=1.6 --format json
 qcog sweep question-order                  # the model's own parameter sweeps
 qcog fit question-order data.json          # fit to observed frequencies (JSON or CSV)
 qcog report --out out/qcog_report.html --markdown
+qcog circuit quantum-prisoners-dilemma     # draw (and describe) the model's circuit
+qcog circuit collective-judgment --out out # write the drawings as PNGs
+qcog run question-order --fast             # headline numbers, no parameter sweeps
 qcog evidence                              # what the library checks about itself
 qcog backends                              # the available execution backends
 ```
@@ -345,6 +371,19 @@ Subclassing the shared `OrderBasedModel` (module B's models do) removes even tha
 parameters and the two questions, and inherit both-orders simulation, the interference decomposition, the QQ
 equality, the law-of-total-probability test, the classical comparison, the sweeps and the standard figures.
 
+Three optional hooks let a model sharpen what it reports:
+
+* `comparison_rows(result)` - the model-versus-classical rows. The default derives them from the analysis
+  dictionaries every model already produces; override it when a sharper comparison is available.
+* `circuit_designs(result)` / `extra_circuit_designs(result)` - what to draw. The default scan matches states to
+  the questions of the same dimension; add extras for a mechanism the scan cannot see (a GHZ preparation, for
+  instance).
+* `circuit_notes(result)` - the words that explain a missing drawing. Readable explanations are part of the
+  contract, not an afterthought.
+
+One naming rule: a model parameter must not be called `noise`, because that name belongs to the execution layer
+(a `NoiseSpec`). The library reports the clash immediately rather than failing later.
+
 ## Scope, honesty and limitations
 
 * A quantum-probability model says that **the data are described by a quantum probability space**. It does not
@@ -356,8 +395,9 @@ equality, the law-of-total-probability test, the classical comparison, the sweep
 * Datasets shipped in `src/qcog/data/` are **illustrative and synthetic**, generated by Q-Cog itself and
   labelled as such; they exist to exercise the fitting workflow. See
   [`src/qcog/data/README.md`](src/qcog/data/README.md).
-* The population models simulate at most ten agents densely; larger networks need the classical baselines or a
-  tensor-network implementation. The library says so where it matters.
+* The population models simulate at most eight agents interactively (ten is the hard limit and is slow); the
+  classical baselines cover larger networks, and the run metadata reports the estimated cost so a user knows
+  before waiting.
 * Game-theoretic conventions (entangling-gate sign, strategy phases) differ between papers. Q-Cog documents its
   own convention, verifies the properties it can check, and prints the best-response scan instead of asserting an
   equilibrium claim that depends on which strategy space is assumed.

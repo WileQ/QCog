@@ -9,14 +9,45 @@ the raw results, so it can be plotted, exported, or fitted.
 
 from __future__ import annotations
 
+import contextlib
 from dataclasses import dataclass, field
 from typing import Callable, Mapping, Sequence
 
 import numpy as np
 
+#: When suppressed, :func:`sweep` returns an empty table instead of running. Used by
+#: :meth:`qcog.models.base.Model.run` when ``sweeps=False``, which gives the headline
+#: numbers without the (sometimes expensive) parameter scans.
+_SUPPRESSED = 0
+
+
+@contextlib.contextmanager
+def suppress_sweeps(suppressed: bool = True):
+    """Temporarily turn sweeps into no-ops (a context manager)."""
+    global _SUPPRESSED
+    if suppressed:
+        _SUPPRESSED += 1
+    try:
+        yield
+    finally:
+        if suppressed:
+            _SUPPRESSED -= 1
+
+
+def sweeps_suppressed() -> bool:
+    """True while sweeps are being suppressed."""
+    return _SUPPRESSED > 0
+
 from ..core.states import as_state
 
-__all__ = ["SweepResult", "sweep", "sharpness_sweep", "decoherence_sweep"]
+__all__ = [
+    "SweepResult",
+    "sweep",
+    "sharpness_sweep",
+    "decoherence_sweep",
+    "suppress_sweeps",
+    "sweeps_suppressed",
+]
 
 
 @dataclass
@@ -68,6 +99,8 @@ def sweep(
     """
     import pandas as pd
 
+    if _SUPPRESSED:
+        return SweepResult(parameter, list(values), pd.DataFrame({parameter: list(values)}), [])
     rows = []
     collected = []
     for value in values:

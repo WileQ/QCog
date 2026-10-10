@@ -106,7 +106,7 @@ class QuantumPrisonersDilemma(Model):
                   "Strategy used by the row player.", choices=tuple(STRATEGY_TABLE)),
         ParamSpec("second_strategy", "choice", "quantum (Q)", "Second player's strategy",
                   "Strategy used by the column player.", choices=tuple(STRATEGY_TABLE)),
-        ParamSpec("noise", "float", 0.0, "Decoherence",
+        ParamSpec("decoherence", "float", 0.0, "Decoherence",
                   "Depolarising probability applied after the strategy unitaries.", 0.0, 1.0),
     )
 
@@ -116,7 +116,7 @@ class QuantumPrisonersDilemma(Model):
 
     def build(self, **parameters) -> dict:
         game = QuantumGame(self.payoff_matrix(), entanglement=float(parameters["entanglement"]),
-                           noise=float(parameters["noise"]), name="quantum prisoner's dilemma")
+                           noise=float(parameters["decoherence"]), name="quantum prisoner's dilemma")
         first = STRATEGY_TABLE[parameters["first_strategy"]]
         second = STRATEGY_TABLE[parameters["second_strategy"]]
         state = as_state(game.final_state(first, second), label="final game state")
@@ -344,6 +344,7 @@ class NegotiationTrust(Model):
             },
             "sweeps": {"shared context": context_sweep, "suspicion": suspicion_sweep},
             "payoff_table": game.payoff_table((context["first"], context["second"])),
+            "payoff_matrix": game.payoff_matrix.tolist(),
         }
         return analysis, findings, summary
 
@@ -437,9 +438,19 @@ class EvolutionOfCooperation(Model):
             "uniform": np.array([1 / 3, 1 / 3, 1 / 3]),
             "mostly cooperators": np.array([0.6, 0.2, 0.2]),
         }
+        # The payoffs come from the quantum game, so the interaction that generates
+        # them is the game circuit with the two strategies of that family.
+        game = QuantumGame(
+            ClassicalPrisonersDilemma().payoff_matrix(),
+            entanglement=float(parameters["entanglement"]),
+            name="payoff-generating game",
+        )
         return {
             "matrix": matrix,
             "shares": starts[parameters["start"]].copy(),
+            "game": game,
+            "first": QuantumStrategy.quantum(),
+            "second": QuantumStrategy.quantum(),
             "parameters": dict(parameters),
         }
 
@@ -795,7 +806,7 @@ class CoordinationGames(Model):
                   "Small bias of the first player towards one convention.", 0.0, PI / 4),
         ParamSpec("second_bias", "float", 0.0, "Second player's bias",
                   "Small bias of the second player towards the same convention.", 0.0, PI / 4),
-        ParamSpec("noise", "float", 0.0, "Decoherence",
+        ParamSpec("decoherence", "float", 0.0, "Decoherence",
                   "Loss of the shared context before the moves are made.", 0.0, 1.0),
     )
 
@@ -805,7 +816,7 @@ class CoordinationGames(Model):
 
     def build(self, **parameters) -> dict:
         game = QuantumGame(self.payoff_matrix(), entanglement=float(parameters["shared_context"]),
-                           noise=float(parameters["noise"]), name="coordination game")
+                           noise=float(parameters["decoherence"]), name="coordination game")
         first = QuantumStrategy("first", float(parameters["first_bias"]), 0.0)
         second = QuantumStrategy("second", float(parameters["second_bias"]), 0.0)
         state = as_state(game.final_state(first, second), label="coordination state")
@@ -864,7 +875,9 @@ class CoordinationGames(Model):
         analysis = {
             "classical": classical.to_dict(),
             "coordination": agreement,
+            "payoff_matrix": game.payoff_matrix.tolist(),
             "payoff_table": game.payoff_table((context["first"], context["second"])),
+            "payoff_matrix": game.payoff_matrix.tolist(),
             "joint_moves": {
                 f"{own}/{opponent}": moves.probability({"player 1": own, "player 2": opponent})
                 for own in ("convention A", "convention B")

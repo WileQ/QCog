@@ -53,6 +53,51 @@ def test_cli_rejects_unknown_model(capsys):
         main(["run", "nope"])
 
 
+def test_cli_prints_the_classical_comparison(capsys):
+    assert main(["run", "question-order", "--fast"]) == 0
+    output = capsys.readouterr().out
+    assert "Against the classical baseline" in output
+    assert "order effect on the first question" in output
+    assert "Quantum circuit(s)" in output
+
+
+def test_cli_circuit_command(capsys, tmp_path):
+    assert main(["circuit", "quantum-prisoners-dilemma"]) == 0
+    output = capsys.readouterr().out
+    assert "entangling game circuit" in output
+    assert "qubits" in output
+    assert main(["circuit", "collective-judgment", "--out", str(tmp_path)]) == 0
+    assert list(tmp_path.glob("*.png"))
+
+
+def test_cli_circuit_reports_notes_alongside_the_drawing(capsys):
+    """When part of a design cannot be drawn, the CLI says why."""
+    assert main(["circuit", "collective-judgment"]) == 0
+    output = capsys.readouterr().out
+    assert "GHZ preparation" in output
+    assert "density matrix" in output
+    assert main(["circuit", "decision-tree"]) == 0
+    assert "sharp version" in capsys.readouterr().out
+
+
+def test_reports_include_comparison_circuit_and_caveats(tmp_path):
+    model = get_model("quantum-prisoners-dilemma")
+    result = model.run(sweeps=False)
+    path = write_model_report(model, result, tmp_path)
+    html = Path(path).read_text(encoding="utf-8")
+    assert "Model versus classical baseline" in html
+    assert "Circuit view" in html
+    assert "classical equilibrium" in html
+    assert html.count("<figure>") >= 2
+
+
+def test_fast_mode_omits_sweep_contents():
+    quick = get_model("question-order").run(sweeps=False)
+    full = get_model("question-order").run()
+    assert len(quick.analysis["sweeps"]["sharpness"].table.columns) == 1
+    assert len(full.analysis["sweeps"]["sharpness"].table.columns) > 1
+
+
 def test_evidence_is_all_passing():
     rows = run_evidence()
     assert len(rows) >= 15
