@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 @pytest.fixture(scope="module")
 def notebook_cells():
-    path = ROOT / "notebooks" / "quickstart.ipynb"
+    path = ROOT / "demos" / "quickstart.ipynb"
     assert path.exists(), "the quickstart notebook is missing"
     notebook = json.loads(path.read_text(encoding="utf-8"))
     return [cell for cell in notebook["cells"] if cell["cell_type"] == "code"]
@@ -52,7 +52,7 @@ def test_notebook_cells_run_from_top_to_bottom(notebook_cells, tmp_path):
     shutil.rmtree(report_dir, ignore_errors=True)
     try:
         # a notebook runs with its own directory as the working directory
-        os.chdir(ROOT / "notebooks")
+        os.chdir(ROOT / "demos")
         for index, cell in enumerate(notebook_cells, 1):
             source = "".join(cell["source"])
             exec(compile(source, f"notebook-cell-{index}", "exec"), namespace)  # noqa: S102

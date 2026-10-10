@@ -107,7 +107,7 @@ def test_showcase_script_runs_from_a_checkout():
     completed = subprocess.run(
         [
             sys.executable,
-            str(root / "showcase" / "run_showcase.py"),
+            str(root / "demos" / "showcase" / "run_showcase.py"),
             "--models",
             "question-order",
             "--fast",
@@ -133,7 +133,7 @@ def test_showcase_accepts_parameter_overrides(tmp_path):
     completed = subprocess.run(
         [
             sys.executable,
-            str(root / "showcase" / "run_showcase.py"),
+            str(root / "demos" / "showcase" / "run_showcase.py"),
             "--models",
             "question-order",
             "--param",

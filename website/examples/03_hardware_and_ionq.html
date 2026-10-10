@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compiling a model for hardware, and running it on IonQ if a token is available. - Q-Cog</title>
+<meta name="description" content="Compiling a model for hardware, and running it on IonQ if a token is available.">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+<header class="site"><div class="brand">Q-Cog</div><nav class="site" aria-label="Site"><ul><li><a href="../index.html">Home</a></li><li><a href="../models/index.html">Models</a></li><li><a href="../notebook.html">Notebook</a></li><li><a href="../examples/index.html" aria-current="page">Examples</a></li><li><a href="../study.html">Study</a></li><li><a href="../docs/index.html">Docs</a></li><li><a href="https://github.com/qcog/qcog">GitHub</a></li></ul></nav></header>
+<main id="main">
+<h1>Compiling a model for hardware, and running it on IonQ if a token is available.</h1>
+<p class="lede-meta">Source: <a href="https://github.com/qcog/qcog/blob/main/demos/examples/03_hardware_and_ionq.py">demos/examples/03_hardware_and_ionq.py</a></p>
+<p>`<code>python demos/examples/03_hardware_and_ionq.py</code>`</p>
+<p>Judging note: IonQ's simulator or hardware never add or subtract points, and the free local simulator is enough for everything in this repository.  This example exists to show that the compilation is portable and that no rewrite is needed.</p>
+<h2>Output</h2><pre class="code" data-language="text"><code>Whole-interview circuit (mid-circuit measurement, minimal qubits)
+  Circuit qcog_interview: 1 qubit(s), 2 classical bit(s), depth 6, containing 2x barrier, 2x measure, 1x state_preparation, 3x unitary. Questions, in order: A: 2-outcome question [yes (rank 1), no (rank 1)]; B: 2-outcome question [yes (rank 1), no (rank 1)].
+  classical bits per shot: 2
+  measured qubits per question: [[0], [0]]
+
+Deterministic branch circuit (no mid-circuit measurement, no reset)
+  first question: Circuit qcog_prefix: 1 qubit(s), 1 classical bit(s), depth 2, containing 1x measure, 1x state_preparation.
+  second question given yes: Circuit qcog_prefix: 1 qubit(s), 1 classical bit(s), depth 2, containing 1x measure, 1x state_preparation.
+
+Frame unitaries (used by the branch circuits):
+  W1 has shape (2, 2)
+  W2 has shape (2, 2)
+
+Qubits required: 1
+IonQ available in this environment: False
+No IONQ_API_KEY configured, so the submission path is exercised locally: `pip install -e &quot;.[ionq]&quot;` and export IONQ_API_KEY to run it for real.
+</code></pre>
+<h2>The code</h2><details><summary>Show the whole script</summary><pre class="code" data-language="python"><code>&quot;&quot;&quot;Compiling a model for hardware, and running it on IonQ if a token is available.
+
+``python demos/examples/03_hardware_and_ionq.py``
+
+Judging note: IonQ&#x27;s simulator or hardware never add or subtract points, and the
+free local simulator is enough for everything in this repository.  This example
+exists to show that the compilation is portable and that no rewrite is needed.
+&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / &quot;src&quot;))
+
+from qcog import basis_state, question  # noqa: E402
+from qcog.backends import IonQBackend, ionq_available  # noqa: E402
+from qcog.circuits import (  # noqa: E402
+    build_prefix_circuit,
+    build_sequence_circuit,
+    circuit_text_alternative,
+    frame_unitaries,
+)
+from qcog.core.linalg import num_qubits_for_dim  # noqa: E402
+
+belief = basis_state(0, 2)
+questions = [question(0.955, 0.0, &quot;A&quot;), question(3.14159 / 2, 0.0, &quot;B&quot;)]
+
+circuit = build_sequence_circuit(belief, questions)
+print(&quot;Whole-interview circuit (mid-circuit measurement, minimal qubits)&quot;)
+print(&quot; &quot;, circuit_text_alternative(circuit, questions))
+print(&quot;  classical bits per shot:&quot;, circuit.num_clbits)
+print(&quot;  measured qubits per question:&quot;, circuit.metadata[&quot;qcog_layout&quot;])
+print()
+
+print(&quot;Deterministic branch circuit (no mid-circuit measurement, no reset)&quot;)
+for prefix in ((), (&quot;yes&quot;,)):
+    branch = build_prefix_circuit(belief, questions, prefix)
+    label = &quot;first question&quot; if not prefix else f&quot;second question given {prefix[0]}&quot;
+    print(f&quot;  {label}: {circuit_text_alternative(branch)}&quot;)
+print()
+
+print(&quot;Frame unitaries (used by the branch circuits):&quot;)
+for index, matrix in enumerate(frame_unitaries(questions)):
+    print(f&quot;  W{index + 1} has shape {matrix.shape}&quot;)
+print()
+
+print(&quot;Qubits required:&quot;, num_qubits_for_dim(belief.dim))
+print(&quot;IonQ available in this environment:&quot;, ionq_available())
+if ionq_available():  # pragma: no cover - needs credentials
+    backend = IonQBackend(&quot;ionq_simulator&quot;)
+    result = backend.run(belief, questions, shots=1024)
+    print(&quot;IonQ result:&quot;, result.summary())
+else:
+    print(
+        &quot;No IONQ_API_KEY configured, so the submission path is exercised locally: &quot;
+        &quot;`pip install -e \&quot;.[ionq]\&quot;` and export IONQ_API_KEY to run it for real.&quot;
+    )</code></pre></details>
+</main>
+<footer class="site"><p>Q-Cog, generated from the library. This effort is supported by Qollab &amp; IonQ.</p></footer>
+</body>
+</html>

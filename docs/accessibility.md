@@ -31,7 +31,7 @@ what Q-Cog does, and - more usefully - how anyone can verify it.
   numbers, and legends are always paired with axis labels or direct text.
 * A high-contrast mode is one checkbox away in the explorer (black background, white text, underlined links).
 * Matplotlib is put in the headless `Agg` backend only when the library is *not* running inside a notebook or
-  another interactive session, so charts render inline for a Jupyter user (see `notebooks/quickstart.ipynb`) and
+  another interactive session, so charts render inline for a Jupyter user (see `demos/quickstart.ipynb`) and
   still work in scripts, servers and report generation.
 
 ## Text alternatives
@@ -53,11 +53,12 @@ An example of what a description looks like:
 * The HTML report contains `<nav aria-label="Contents">`, one `<h1>`, ordered headings, `<section>`s with
   `aria-labelledby`, a skip link that becomes visible on focus, table `<caption>`s and `scope="col"` headers,
   and `:focus-visible` outlines (3 px, high contrast).
-* The explorer relies on Streamlit's native widgets, which expose labels and help text; each parameter's
-  `description` from the model's `ParamSpec` is passed to the widget as help text, so the same explanation
-  appears to a screen reader as to a sighted user.
-* Reading options in the explorer: dark background, larger type (118% root font size), high contrast, and
-  **text-only mode**, which hides all images and shows the data tables instead.
+* Every page of the [website](../website/) is static semantic HTML: a skip link, headings in order, a
+  navigation landmark with `aria-current` on the active page, alternative text on every figure, and visible
+  focus outlines. Each parameter's `description` from its `ParamSpec` is the text used in the documentation, the
+  tables and the generated pages, so the same explanation reaches every reader.
+* Reading options: the site follows the system colour-scheme preference and stays readable with images
+  disabled, because every chart appears with its description and with the data table it was drawn from.
 
 ## Language
 
@@ -68,7 +69,7 @@ An example of what a description looks like:
 
 ## Charts in a notebook
 
-`notebooks/quickstart.ipynb` is the accessible-by-example tour: it prints the classical comparison as a table
+`demos/quickstart.ipynb` is the accessible-by-example tour: it prints the classical comparison as a table
 *and* shows the chart with its description underneath, draws the circuit with an adjustable style, and saves a
 report. The notebook's cells are executed by the test suite from top to bottom, so it cannot rot.
 
@@ -107,7 +108,7 @@ series styles stay distinguishable and that the comparison chart separates its t
 
 * The figures are static images. The **data tables** are the accessible equivalent, and the text descriptions
   give the values that matter; a colour-vision or screen-reader user should use those, not the PNGs.
-* Streamlit itself is not fully screen-reader-annotated in every widget; the explorer is the convenience layer,
-  and the CLI plus the HTML report are the fully accessible surfaces.
+* The website is generated, so its content is identical to what the CLI and the reports produce; the CLI
+  remains the surface with no HTML at all.
 * Mathematical notation is written in ASCII in the interface and in LaTeX-free prose in the reports, so it is
   read correctly by speech synthesisers.

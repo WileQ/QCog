@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>submission checklist - Q-Cog</title>
+<meta name="description" content="submission checklist">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+<header class="site"><div class="brand">Q-Cog</div><nav class="site" aria-label="Site"><ul><li><a href="../index.html">Home</a></li><li><a href="../models/index.html">Models</a></li><li><a href="../notebook.html">Notebook</a></li><li><a href="../examples/index.html">Examples</a></li><li><a href="../study.html">Study</a></li><li><a href="../docs/index.html" aria-current="page">Docs</a></li><li><a href="https://github.com/qcog/qcog">GitHub</a></li></ul></nav></header>
+<main id="main">
+<h1 id="submission-checklist">Submission checklist</h1>
+<p>Requirement-by-requirement status for the Qollab x IonQ hackathon submission. Every "how to verify" line is a command or a file path inside this repository.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">#</th><th scope="col">Requirement</th><th scope="col">Status</th><th scope="col">Where / how to verify</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Uses the Qiskit framework</td><td><strong>Met</strong></td><td><code>qiskit.quantum_info.{Statevector, DensityMatrix, Operator, Kraus, partial_trace, schmidt_decomposition}</code>, <code>qiskit.circuit.library.{StatePreparation, UnitaryGate}</code>, <code>qiskit_aer.AerSimulator</code>; <code>qcog/backends/<em></code>, <code>qcog/circuits/</em></code></td></tr>
+<tr><td>2</td><td>Follows industry best practices on UI accessibility</td><td><strong>Met</strong></td><td><code>docs/accessibility.md</code>; every figure carries a text description (<code>qcog.viz</code>) and every chart a data table; the reports and the generated <a href="https://github.com/qcog/qcog/blob/main/website/">website</a> have a skip link, captions, <code>scope</code> attributes and focus outlines, and the reader's dark-mode preference is respected</td></tr>
+<tr><td>3</td><td>Runs on Qollab's free simulators, including IonQ's</td><td><strong>Met</strong></td><td>`qcog run &lt;model&gt; --backend exact</td><td>sampled</td><td>aer</td><td>aer_exact<code> needs no credentials; optional </code>--backend ionq<code> via </code>qiskit-ionq<code> (</code>demos/examples/03_hardware_and_ionq.py`)</td></tr>
+<tr><td>4</td><td>Published and runnable on Qollab.xyz under MIT before the deadline</td><td><strong>Action</strong></td><td>publish the repository on Qollab; licence file is <code>LICENSE</code> (MIT); see <code>docs/qollab_runbook.md</code></td></tr>
+<tr><td>5</td><td>MIT licence for outside repositories it relies on</td><td><strong>Met</strong></td><td>all dependencies are Apache-2.0/BSD/MIT (<code>ATTRIBUTION.md</code>); no copyleft dependency</td></tr>
+<tr><td>6</td><td>Project page covering what it does, the problem, how to run, how to replicate/extend</td><td><strong>Met</strong></td><td><code>docs/project_page.md</code> (paste-ready), plus <code>README.md</code></td></tr>
+<tr><td>7</td><td>Built during the hackathon window; pre-existing material disclosed</td><td><strong>Met</strong></td><td>started from an empty directory; <code>ATTRIBUTION.md</code> records the disclosure and the literature usage</td></tr>
+<tr><td>8</td><td>Demo video, 2-3 minutes, public link openable without signing in</td><td><strong>Action</strong></td><td>script ready in <code>docs/demo_video_script.md</code>; record, upload, paste the link into the project page</td></tr>
+<tr><td>9</td><td>Originality: substantially new work, no plagiarism</td><td><strong>Met</strong></td><td>every line written for this project; literature is cited, never copied (<code>ATTRIBUTION.md</code>)</td></tr>
+</tbody></table></div>
+<h2 id="non-obvious-requirements-worth-double-checking">Non-obvious requirements worth double-checking</h2>
+<ul><li><strong>"Results from IonQ's simulators or hardware neither add nor subtract points."</strong> Nothing in the submission depends on IonQ credentials; the default path is local. Verified by running the catalogue with the default backends.</li><li><strong>"Every project must run on a free local simulator."</strong> <code>qcog evidence</code> finishes in about a minute on a laptop and never touches the network; <code>qcog report</code> regenerates every artefact offline.</li><li><strong>Attribution.</strong> The line <em>This effort is supported by Qollab &amp; IonQ</em> appears in the README, the generated reports (<code>report.py</code> footer), the explorer and the project page - the rules ask for it on the project.</li><li><strong>Twelve-month availability.</strong> The repository is self-contained (no external data or services); keep the repo and the video link alive.</li><li><strong>Payment method for awards.</strong> Account-level detail, not part of this repository - remember to add it.</li></ul>
+<h2 id="final-pre-submission-run">Final pre-submission run</h2>
+<pre class="code" data-language="bash"><code>python -m pytest -q                     # expect: 83 passed
+qcog evidence                           # expect: every row PASS
+qcog report --out out/qcog_report.html --markdown
+python demos/examples/01_first_steps.py
+python demos/examples/05_catalogue_report.py</code></pre>
+<p>Then:</p>
+<ol><li>publish on Qollab, set the licence to MIT, paste the project page text;</li><li>record and upload the demo video (script in <code>docs/demo_video_script.md</code>), paste the public link;</li><li>confirm the attribution line is visible on the project page;</li><li>post at least once on social channels about participating (a winning-team obligation);</li><li>keep the repository and the video online for twelve months.</li></ol>
+</main>
+<footer class="site"><p>Q-Cog, generated from the library. This effort is supported by Qollab &amp; IonQ.</p></footer>
+</body>
+</html>

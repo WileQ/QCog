@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>q cog a quantum cognition simulation and visualization library - Q-Cog</title>
+<meta name="description" content="q cog a quantum cognition simulation and visualization library">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+<header class="site"><div class="brand">Q-Cog</div><nav class="site" aria-label="Site"><ul><li><a href="../index.html">Home</a></li><li><a href="../models/index.html">Models</a></li><li><a href="../notebook.html">Notebook</a></li><li><a href="../examples/index.html">Examples</a></li><li><a href="../study.html">Study</a></li><li><a href="../docs/index.html" aria-current="page">Docs</a></li><li><a href="https://github.com/qcog/qcog">GitHub</a></li></ul></nav></header>
+<main id="main">
+<h1 id="q-cog-a-quantum-cognition-simulation-and-visualization-library">Q-Cog - a quantum cognition simulation and visualization library</h1>
+<blockquote><strong>This effort is supported by Qollab &amp; IonQ.</strong></blockquote>
+<h2 id="what-the-submission-does">What the submission does</h2>
+<p>Q-Cog is a reusable Python library, plus an interactive platform built on top of it, for modelling, simulating, fitting and explaining <strong>quantum-probability models of human judgement, decision making and collective behaviour</strong>. It is built on <strong>Qiskit</strong> and runs on a free local simulator; nothing in it requires hardware, a token or network access.</p>
+<p>It connects four things that are usually separate:</p>
+<ol><li><strong>Cognitive phenomena</strong> - what happens in reasoning, judgement and decision making.</li><li><strong>Mathematical models</strong> - quantum states, projectors, interference, entanglement, sequential measurement.</li><li><strong>Qiskit simulations</strong> - runnable circuits, statevector references, shot-based sampling, noise.</li><li><strong>Interactive explanations</strong> - why the model predicts this particular result, and how it compares with a classical account.</li></ol>
+<p>It contains <strong>23 documented models in four modules</strong>:</p>
+<ul><li><strong>A - Individual cognition:</strong> superposition of beliefs, question-order effects, the interference/disjunction paradox, quantum decision trees, belief revision and framing.</li><li><strong>B - Logic, concepts and memory:</strong> the conjunction fallacy, the disjunction effect, concept combination, associative memory and cue interference, semantic ambiguity, sequential categorisation, conceptual entanglement, contradictory beliefs.</li><li><strong>C - Strategic decisions:</strong> the quantum prisoner's dilemma (EWL), negotiation and trust, the evolution of cooperation, auctions, coordination games.</li><li><strong>D - Groups and networks:</strong> quantum opinion dynamics, polarisation, collective judgement (Condorcet), information cascades, deliberation and voting.</li></ul>
+<p>Every model can be driven and reconfigured from Python, and every run reports:</p>
+<ul><li>what it simulates, as a joint and conditional response distribution;</li><li>the <strong>classical baseline</strong> for the same situation, computed rather than asserted, as a quantity-by-quantity comparison (a table in the CLI, the explorer and the report, and a bar chart in every figure set);</li><li>an <strong>interference decomposition</strong> wherever it applies (classical term plus interference term);</li><li>the order-effect measures, including the parameter-free <strong>QQ equality</strong> for two dichotomous questions;</li><li>a drawing of the <strong>quantum circuit</strong> wherever the model has one (the image itself is adjustable: style, scale, folding, format) - both orders of a two-question design, the entangling circuit for the games, the sharp limit of an unsharp question, the GHZ preparation for the correlated crowd - each carrying a plain-language description, and a written explanation when a drawing is impossible (a mixed state, for example);</li><li>the <strong>caveats</strong>: what the model does <em>not</em> establish.</li></ul>
+<h2 id="what-problem-it-explores">What problem it explores</h2>
+<p>Quantum cognition asks a specific question: <em>can human judgements be described by a probability theory in which questions do not commute?</em> If they can, then several things that look like errors become structural consequences instead:</p>
+<ul><li>the answer to a question depends on which question came before it (question-order effects);</li><li>the probability of a conjunction can exceed the probability of its conjunct (the conjunction fallacy);</li><li>a decision changes when an unresolved alternative is resolved (the disjunction effect);</li><li>a group is wiser than its members only to the extent that the members are independent.</li></ul>
+<p>Q-Cog does not argue for this programme; it makes it <strong>testable and comparable</strong>. Each model states the classical identity that its quantum counterpart can violate, computes the size of the violation, and provides the statistical tools to ask whether an observed violation is real or noise. The library's explicit policy is that where a classical account fits equally well, it says so.</p>
+<h2 id="how-to-run-it">How to run it</h2>
+<h3 id="requirements">Requirements</h3>
+<p>Python 3.10+, <code>qiskit&gt;=2.0</code>, <code>qiskit-aer</code>, <code>numpy</code>, <code>scipy</code>, <code>pandas</code>, <code>matplotlib</code>. Optional: <code>qiskit-ionq</code> (the IonQ submission path). The website builder needs nothing beyond these.</p>
+<h3 id="install-and-run">Install and run</h3>
+<pre class="code" data-language="bash"><code>python -m pip install -e &quot;.[dev]&quot;      # or run from the checkout: the notebook adds src/ itself
+
+qcog list                       # the catalogue
+qcog run question-order         # run the flagship model and read its findings
+qcog evidence                   # the self-check table (about a minute)
+qcog report --out out/qcog_report.html --markdown
+python scripts/build_website.py      # regenerate the static site into website/
+python demos/examples/01_first_steps.py
+python demos/showcase/run_showcase.py               # a scripted tour with captured output and figures
+
+qcog circuit quantum-prisoners-dilemma        # draw the model&#x27;s circuit
+qcog run question-order --fast                # headline numbers without the sweeps
+qcog run collective-judgment --classical-option accuracy=0.8   # adjust the classical baseline</code></pre>
+<h3 id="driving-a-model-from-python">Driving a model from Python</h3>
+<p>Every parameter of every model can be set from Python, and every parameter's bounds and meaning are declared once and reused by the CLI, the explorer, the fitting layer and the documentation. <code>qcog.core.params.ParamSpec</code> describes them; <code>model.defaults()</code> prints them; <code>model.run(**parameters)</code> applies them. The test suite runs each model with every parameter at both of its bounds (or at every choice) and checks that the results stay normalised, so "adjustable in Python" is a tested property rather than a claim. Two further checkers keep the artefacts honest: <code>python scripts/check_figures.py</code> renders every visualization and verifies that each drawing matches the numbers behind it, and <code>python scripts/check_docs.py</code> verifies that the documentation still matches the code.</p>
+<h3 id="guided-tours">Guided tours</h3>
+<ul><li><strong><code>demos/quickstart.ipynb</code></strong> - a short, simple notebook built around one real survey: <em>"Are you satisfied with the economy?"</em> and <em>"Will you vote for the current administration?"</em>, asked in both orders. It explains the state and the questions, reads the order effect, checks the law of total probability and the parameter-free QQ equality, draws the circuits with the survey questions on the gates, samples them on a simulator and saves a report. Its cells are executed by the test suite, so it always runs.</li><li><strong><code>demos/examples/06_economy_and_vote.py</code></strong> - the same survey as a script, writing the circuit images out.</li><li><strong><code>showcase/</code></strong> - the same ideas as a script, with its captured output, every figure and an HTML report per model.</li><li><strong><code>website/</code></strong> - the static site, generated from the library (<code>python scripts/build_website.py</code>): a page per model with its figures, classical comparison and circuit drawings, the rendered notebook, the examples with their captured output, and the study. It is published on GitHub Pages by a workflow, needs no server, and works from a local folder as well as over the web.</li></ul>
+<h3 id="the-shortest-complete-example">The shortest complete example</h3>
+<pre class="code" data-language="python"><code>import sys; sys.path.insert(0, &quot;src&quot;)
+from qcog import basis_state, question, run_sequence, order_effect, qq_equality, explain_order_effect
+
+belief = basis_state(0, 2)
+a = question(0.955, 0.0, &quot;A&quot;)
+b = question(3.14159 / 2, 0.0, &quot;B&quot;)
+
+forward = run_sequence(belief, [a, b])
+backward = run_sequence(belief, [b, a])
+
+report = order_effect(forward, backward, &quot;A&quot;, &quot;B&quot;)
+print(report.summary())
+print(explain_order_effect(report))
+print(qq_equality(forward, backward, &quot;A&quot;, &quot;B&quot;).summary())</code></pre>
+<h2 id="where-the-quantum-account-does-better">Where the quantum account does better</h2>
+<p><a href="https://github.com/qcog/qcog/blob/main/studies/quantum_advantage/"><code>studies/quantum_advantage/</code></a> is a self-contained comparative study: five cases, each with simulated data, fits and a verdict, and each labelled with the precise sense in which "better" is meant</p>
+<ul><li><strong>S1</strong> an <em>imposed impossibility</em> (the pattern is outside the classical family), <strong>S2</strong> a *parameter-free</li></ul>
+<p>prediction* the classical account gets wrong, or <strong>S3</strong> <em>parsimony and unification</em>. The headline results:</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">case</th><th scope="col">sense</th><th scope="col">result</th></tr></thead>
+<tbody>
+<tr><td>Question order (two survey questions, both orders)</td><td>S1</td><td>held-out prediction error 0.12 against 0.36; the classical identity is violated by 0.10</td></tr>
+<tr><td>Conjunction fallacy (Linda)</td><td>S1</td><td>the conjunction exceeds the classical bound by 0.12, and no classical model can pass that bound</td></tr>
+<tr><td>Disjunction effect (unknown opponent)</td><td>S1, verified over 200 random bipartite states</td><td>violation 0.29 in the coherent design, 1e-16 in every factorised state</td></tr>
+<tr><td>Correlated crowd (Condorcet)</td><td>S2</td><td>vote-count variance 5.9 against the independent model's 1.5 at the same mean</td></tr>
+<tr><td>Superposition versus ignorance</td><td>S2</td><td>a distribution-only account is wrong by 0.50 on the second question, with no parameter to adjust</td></tr>
+</tbody></table></div>
+<p>The study is explicit about the limits of its own claims: the data are simulated <em>from the quantum models</em> (which is what makes an impossibility claim possible), and where a classical model survives - a classical model with order-dependent joints, and the beta-binomial as a classical model of over-dispersion - the report says so.</p>
+<h2 id="how-to-replicate-it">How to replicate it</h2>
+<p>Everything needed to reproduce every number in this project is in the repository, and the checks are executable:</p>
+<ul><li><code>python -m pytest -q</code> runs 128 tests covering states, questions, channels, backends, analysis, classical baselines, fitting, the CLI, the reports, the figures and every model's central claim.</li><li><code>qcog evidence</code> prints the evidence table: the interference decomposition, the QQ equality, the classical limits, the circuit-versus-analytic parity, the game-theory checks, the entanglement calibration, and a run of all 23 models.</li><li><code>qcog report</code> embeds that same table in the generated HTML, so a failure is visible in the published artefact.</li><li>All randomness is seeded; the analytic backends are exact and deterministic.</li></ul>
+<p>The two execution paths come from <strong>one</strong> definition. Every question is a family of projectors; the analytic engine applies the Born rule and the Lüders update to them directly, and the circuit compiler turns the same projectors into basis-change unitaries. Agreement between the two (about 1e-16 for the exact compilations, within five standard errors for shot-based runs) is what makes the compilation trustworthy.</p>
+<h2 id="how-to-extend-it">How to extend it</h2>
+<ul><li><strong>Add a model</strong>: subclass <code>Model</code> (or <code>OrderBasedModel</code> for two-question designs), declare metadata and parameters, register it. The CLI, the explorer, the report, the docs and the tests pick it up automatically. The generated documentation (<code>scripts/generate_docs.py</code>) proves the claim that the docs cannot drift from the code.</li><li><strong>Bring your own data</strong>: <code>qcog fit &lt;model&gt; data.json</code> fits a model's parameters to observed frequencies and compares it with a classical baseline through information criteria. The data format is documented in <code>src/qcog/data/README.md</code>.</li><li><strong>Use the pieces directly</strong>: the core (<code>qcog.core</code>), the analysis (<code>qcog.analysis</code>), the experiment designs (<code>qcog.experiments</code>), the backends (<code>qcog.backends</code>) and the figures (<code>qcog.viz</code>) are all usable on their own.</li></ul>
+<h2 id="accessibility">Accessibility</h2>
+<p>Industry best practices for UI accessibility are followed by construction:</p>
+<ul><li>every figure carries a plain-language description on the figure object, and the report embeds it as alt text plus a long description, with the underlying data table next to it;</li><li>the colour-blind-safe Okabe-Ito palette, with no information carried by colour alone;</li><li>semantic HTML with a skip link, ordered headings, table captions and <code>scope</code> attributes, and visible focus outlines, in the reports and on the <a href="https://github.com/qcog/qcog/blob/main/website/">website</a>;</li><li>the site follows the reader's system preference for a dark background, and works with images disabled because every chart carries its description and its data table;</li><li>explanations written in plain language and generated from the computed numbers.</li></ul>
+<p>Details and verification instructions: <a href="../docs/accessibility.html"><code>accessibility.md</code></a>.</p>
+<h2 id="documentation-map">Documentation map</h2>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">File</th><th scope="col">Contents</th></tr></thead>
+<tbody>
+<tr><td><a href="../docs/index.html"><code>../README.md</code></a></td><td>overview, install, quick start, catalogue, CLI</td></tr>
+<tr><td><a href="../docs/project_page.html"><code>project_page.md</code></a></td><td>this page</td></tr>
+<tr><td><a href="../docs/methodology.html"><code>methodology.md</code></a></td><td>the mathematics, conventions and statistical tests</td></tr>
+<tr><td><a href="../docs/accessibility.html"><code>accessibility.md</code></a></td><td>accessibility practices and how to check them</td></tr>
+<tr><td><a href="../docs/limitations.html"><code>limitations.md</code></a></td><td>what the models do not claim</td></tr>
+<tr><td><a href="../docs/demo_video_script.html"><code>demo_video_script.md</code></a></td><td>the 2-3 minute demo script</td></tr>
+<tr><td><a href="../docs/qollab_runbook.html"><code>qollab_runbook.md</code></a></td><td>running and publishing on Qollab, including IonQ</td></tr>
+<tr><td><a href="../docs/submission_checklist.html"><code>submission_checklist.md</code></a></td><td>requirement-by-requirement status</td></tr>
+<tr><td><a href="../docs/models.generated.html"><code>models.generated.md</code></a></td><td>the catalogue generated from the code</td></tr>
+<tr><td><a href="../docs/ATTRIBUTION.html"><code>../ATTRIBUTION.md</code></a></td><td>attribution and disclosure</td></tr>
+</tbody></table></div>
+<h2 id="licence">Licence</h2>
+<p>MIT. Code, documentation and figures are released under the same licence.</p>
+</main>
+<footer class="site"><p>Q-Cog, generated from the library. This effort is supported by Qollab &amp; IonQ.</p></footer>
+</body>
+</html>

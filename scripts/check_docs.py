@@ -57,7 +57,7 @@ def main() -> int:
     project_page = _read("docs/project_page.md")
     accessibility = _read("docs/accessibility.md")
     methodology = _read("docs/methodology.md")
-    showcase_readme = _read("showcase/README.md")
+    showcase_readme = _read("demos/showcase/README.md")
     contributing = _read("CONTRIBUTING.md")
 
     # 1. the model count
@@ -108,9 +108,14 @@ def main() -> int:
 
     # 6. the files the docs point at exist
     for relative in (
-        "showcase/run_showcase.py", "showcase/output.txt", "showcase/figures", "showcase/reports",
-        "notebooks/quickstart.ipynb", "examples/05_catalogue_report.py",
-        "examples/06_economy_and_vote.py", "scripts/check_figures.py",
+        "demos/showcase/run_showcase.py", "demos/showcase/output.txt", "demos/showcase/figures",
+        "demos/showcase/reports", "demos/README.md",
+        "website/index.html", "website/models/index.html", "website/assets/style.css",
+        "scripts/build_website.py", "scripts/check_website.py", "docs/packaging.md",
+        ".github/workflows/pages.yml", ".github/workflows/release.yml",
+        "demos/quickstart.ipynb", "demos/examples/05_catalogue_report.py",
+        "demos/examples/06_economy_and_vote.py", "scripts/check_figures.py",
+        "scripts/build_website.py", "scripts/check_website.py",
         "studies/quantum_advantage/run_study.py", "studies/quantum_advantage/REPORT.md",
         "studies/quantum_advantage/results.json", "studies/quantum_advantage/README.md",
         "scripts/generate_docs.py", "docs/models.generated.md", "docs/project_page.md",
@@ -143,12 +148,16 @@ def main() -> int:
         )
 
     # 7. the notebook and the showcase are referenced where a reader looks
-    check("README points at the notebook", "quickstart.ipynb" in readme or "notebooks/" in readme)
-    check("README points at the showcase", "showcase/" in readme)
+    check("README points at the notebook", "demos/quickstart.ipynb" in readme)
+    check("README points at the showcase", "demos/showcase" in readme)
+    check("README points at the website", "website/" in readme)
+    check("README documents installing from PyPI", "pip install qcog" in readme)
+    check("README points at the packaging guide", "docs/packaging.md" in readme)
     check("README points at the comparative study", "studies/quantum_advantage" in readme)
     check("project page points at the comparative study", "studies/quantum_advantage" in project_page)
     check("project page points at the showcase", "showcase" in project_page)
     check("project page points at the notebook", "notebook" in project_page.lower())
+    check("project page points at the website", "website" in project_page.lower())
     check("contributing explains the visualization check", "check_figures.py" in contributing)
     check("showcase README explains its own contents", "run_showcase.py" in showcase_readme and "output.txt" in showcase_readme)
 

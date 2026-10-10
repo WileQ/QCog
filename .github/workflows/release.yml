@@ -1,0 +1,70 @@
+# Build the package and publish it to PyPI (and TestPyPI on request).
+#
+# Publishing uses PyPI's *trusted publishing*: no API token is stored anywhere.  Set it up once
+# on PyPI at https://pypi.org/manage/account/publishing/ with
+#     owner: <your GitHub user or organisation>
+#     repository: <this repository>
+#     workflow: release.yml
+#     environment: pypi
+# and add the environment name in the job below if you rename it.  `testpypi` needs the same
+# entry on https://test.pypi.org/manage/account/publishing/.
+#
+#   * pushing a tag like v0.1.1 publishes to PyPI
+#   * running this workflow by hand with target=testpypi publishes to TestPyPI (a dry run)
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "where to publish"
+        type: choice
+        default: testpypi
+        options: [testpypi, pypi]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build the wheel and the source distribution
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build twine
+          python -m build
+      - name: Check the metadata and the long description
+        run: python -m twine check dist/*
+      - name: Install the built wheel and import it
+        run: |
+          python -m venv /tmp/smoke
+          /tmp/smoke/bin/python -m pip install dist/*.whl
+          /tmp/smoke/bin/python -c "import qcog; print('qcog', qcog.__version__, 'with', len(qcog.list_models()), 'models')"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.target == 'pypi' && 'pypi' || 'pypi' }}
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Publish to PyPI
+        if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.target == 'pypi'
+        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Publish to TestPyPI
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'testpypi'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/

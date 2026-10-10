@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A real-world survey, end to end, with the circuits drawn. - Q-Cog</title>
+<meta name="description" content="A real-world survey, end to end, with the circuits drawn.">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+<header class="site"><div class="brand">Q-Cog</div><nav class="site" aria-label="Site"><ul><li><a href="../index.html">Home</a></li><li><a href="../models/index.html">Models</a></li><li><a href="../notebook.html">Notebook</a></li><li><a href="../examples/index.html" aria-current="page">Examples</a></li><li><a href="../study.html">Study</a></li><li><a href="../docs/index.html">Docs</a></li><li><a href="https://github.com/qcog/qcog">GitHub</a></li></ul></nav></header>
+<main id="main">
+<h1>A real-world survey, end to end, with the circuits drawn.</h1>
+<p class="lede-meta">Source: <a href="https://github.com/qcog/qcog/blob/main/demos/examples/06_economy_and_vote.py">demos/examples/06_economy_and_vote.py</a></p>
+<p>python demos/examples/06_economy_and_vote.py            # print everything, save the images</p>
+<p>The survey has two questions:</p>
+<p>Question A: "Are you satisfied with the economy?" Question B: "Will you vote for the current administration?"</p>
+<p>Half the respondents are asked A first, half are asked B first.  In a classical world that cannot matter: both answers come from one joint distribution, so the marginal of A is the same either way.  In this model the two questions are <em>incompatible</em> - answering one changes the state the next one is put to - so the order does matter, by an amount the model predicts.  The script prints the numbers, then draws the circuits that produce them, with the questions' real names on the gates.</p>
+<p>The same model ships as `<code>qcog run question-order</code>`; here we build the design by hand so the questions can carry their survey names, and so the circuits can be shown next to the numbers.</p>
+<h2>Output</h2><pre class="code" data-language="text"><code>============================================================================================
+Survey: A = &#x27;Are you satisfied with the economy?&#x27;   B = &#x27;Will you vote for the current administration?&#x27;
+============================================================================================
+Respondent&#x27;s belief angle      : 1.00 rad (leaning in favour, not decided)
+Question incompatibility       : 1.712   (0 would mean the two questions are classically compatible)
+
+WHAT THE TWO QUESTION ORDERS PREDICT
+  asked A first : p(satisfied with the economy) = 0.994
+  asked B first : p(satisfied with the economy) = 0.849
+  shift         : +0.145   (total variation between the two orders 0.145)
+
+  The first answer also moves the second:
+    among respondents who said &#x27;satisfied&#x27;: p(vote for the administration? = would vote) = 0.898
+    among respondents who said &#x27;dissatisfied&#x27;: p(vote for the administration? = would vote) = 0.102
+
+WHAT A CLASSICAL ACCOUNT IS FORCED TO PREDICT
+  one joint distribution over the two answers, so the marginal of A cannot depend on the order:
+    measured directly          : 0.994
+    computed from the other order: 0.849
+    violation                   : +0.145   (a classical model: exactly 0)
+
+WHERE THE PROBABILITY COMES FROM
+  vote for the administration?=would vote: p=0.9388 = direct 0.8936 + interference +0.0452; vote for the administration?=would not vote: p=0.0612 = direct 0.1064 + interference -0.0452
+
+THE PARAMETER-FREE TEST
+  QQ equality holds: same-answer agreement is 0.8980 in one order and 0.8980 in the other (difference -0.0000, z = +0.00).
+
+ON A SIMULATOR, WITH 8000 RESPONDENTS PER ORDER
+  order effect +0.139 (exact: +0.145)
+  QQ equality holds: same-answer agreement is 0.9031 in one order and 0.9027 in the other (difference +0.0004, z = +0.08).
+
+THE CIRCUITS
+  A then B (the whole interview)
+    Circuit qcog_interview: 1 qubit(s), 2 classical bit(s), depth 6, containing 2x barrier, 2x measure, 1x state_preparation, 3x unitary.
+    image: out\economy_vote\A_then_B.png
+  B then A (the whole interview)
+    Circuit qcog_interview: 1 qubit(s), 2 classical bit(s), depth 6, containing 2x barrier, 2x measure, 1x state_preparation, 3x unitary.
+    image: out\economy_vote\B_then_A.png
+  branch: A = satisfied
+    Circuit qcog_prefix: 1 qubit(s), 1 classical bit(s), depth 2, containing 1x measure, 1x state_preparation.
+    image: out\economy_vote\branch_A__satisfied.png
+  branch: A = dissatisfied
+    Circuit qcog_prefix: 1 qubit(s), 1 classical bit(s), depth 2, containing 1x measure, 1x state_preparation.
+    image: out\economy_vote\branch_A__dissatisfied.png
+
+READING THE DRAWINGS
+  * the first box prepares the respondent&#x27;s belief - a superposition, not a hidden answer;
+  * the next box rotates the state into the basis of &#x27;satisfied with the economy?&#x27; and the
+    measurement records the answer; for all but the last question the rotation is undone,
+    so the second question is put to the *collapsed* state the first answer left behind -
+    that collapse is the whole reason the order matters;
+  * the branch circuits need no mid-circuit measurement at all: they prepare the state that
+    follows from a given first answer and then ask the second question, which is the form to
+    submit to hardware with limited mid-circuit measurement support.
+
+THE SAME MODEL, PACKAGED
+  Order effect 0.145; QQ difference -0.000; incompatibility 1.712.
+  (qcog run question-order --param state_angle=1.0 --param angle_a=0.85 --param angle_b=1.5)
+
+WHAT THIS DOES NOT CLAIM
+  - This is a model of response probabilities, not a claim about what the brain does.
+  - A quantum model only means the data are described by a quantum probability space; classical models may fit equally well, and the classical baseline is reported for that reason.
+  - The QQ equality requires two dichotomous questions; for more outcomes the model checks the corresponding multi-term identity numerically instead.
+</code></pre>
+<h2>The code</h2><details><summary>Show the whole script</summary><pre class="code" data-language="python"><code>&quot;&quot;&quot;A real-world survey, end to end, with the circuits drawn.
+
+    python demos/examples/06_economy_and_vote.py            # print everything, save the images
+
+The survey has two questions:
+
+    Question A: &quot;Are you satisfied with the economy?&quot;
+    Question B: &quot;Will you vote for the current administration?&quot;
+
+Half the respondents are asked A first, half are asked B first.  In a classical world that
+cannot matter: both answers come from one joint distribution, so the marginal of A is the
+same either way.  In this model the two questions are *incompatible* - answering one changes
+the state the next one is put to - so the order does matter, by an amount the model
+predicts.  The script prints the numbers, then draws the circuits that produce them, with
+the questions&#x27; real names on the gates.
+
+The same model ships as ``qcog run question-order``; here we build the design by hand so the
+questions can carry their survey names, and so the circuits can be shown next to the numbers.
+&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT / &quot;src&quot;) not in sys.path:
+    sys.path.insert(0, str(ROOT / &quot;src&quot;))
+
+import qcog  # noqa: E402
+from qcog.analysis import interference_decomposition, order_effect, qq_equality  # noqa: E402
+from qcog.circuits import build_prefix_circuit, build_sequence_circuit, circuit_text_alternative  # noqa: E402
+from qcog.core import Engine, amplitudes, question, run_sequence  # noqa: E402
+from qcog.core.classical import law_of_total_probability  # noqa: E402
+from qcog.experiments import TwoQuestionExperiment  # noqa: E402
+from qcog.viz import circuit_figure, savefig  # noqa: E402
+
+# --------------------------------------------------------------------------- the survey
+# The respondent&#x27;s disposition towards the administration, as an angle from &quot;against&quot;:
+# |0&gt; is firmly against, |1&gt; is firmly in favour, and this respondent leans in favour
+# without being decided (a superposition, not a hidden answer).
+RESPONDENT = 1.0  # radians
+# The two questions, as directions in that same space.  Their angle *difference* decides
+# how incompatible they are (here they are far apart, which is what makes the order matter).
+ECONOMY_ANGLE = 0.85
+VOTE_ANGLE = 1.50
+
+import numpy as np  # noqa: E402
+
+belief = amplitudes(np.cos(RESPONDENT / 2), np.sin(RESPONDENT / 2), label=&quot;respondent belief&quot;)
+economy = question(ECONOMY_ANGLE, 0.0, &quot;satisfied with the economy?&quot;, (&quot;satisfied&quot;, &quot;dissatisfied&quot;),
+                   &quot;Question A of the survey&quot;)
+vote = question(VOTE_ANGLE, 0.0, &quot;vote for the administration?&quot;, (&quot;would vote&quot;, &quot;would not vote&quot;),
+                &quot;Question B of the survey&quot;)
+
+design = TwoQuestionExperiment(belief, economy, vote)
+engine = Engine(backend=&quot;exact&quot;)
+
+print(&quot;=&quot; * 92)
+print(&quot;Survey: A = &#x27;Are you satisfied with the economy?&#x27;   B = &#x27;Will you vote for the current administration?&#x27;&quot;)
+print(&quot;=&quot; * 92)
+print(f&quot;Respondent&#x27;s belief angle      : {RESPONDENT:.2f} rad (leaning in favour, not decided)&quot;)
+print(f&quot;Question incompatibility       : {design.incompatibility:.3f}&quot;
+      f&quot;   (0 would mean the two questions are classically compatible)&quot;)
+print()
+
+# ------------------------------------------------------------------- both orders
+results = design.run_both_orders(engine)
+forward, backward = results[&quot;A_then_B&quot;], results[&quot;B_then_A&quot;]
+report = order_effect(forward, backward, economy.name, vote.name)
+
+print(&quot;WHAT THE TWO QUESTION ORDERS PREDICT&quot;)
+print(f&quot;  asked A first : p(satisfied with the economy) = {forward.marginal(economy.name)[&#x27;satisfied&#x27;]:.3f}&quot;)
+print(f&quot;  asked B first : p(satisfied with the economy) = {backward.marginal(economy.name)[&#x27;satisfied&#x27;]:.3f}&quot;)
+print(f&quot;  shift         : {report.max_marginal_shift():+.3f}&quot;
+      f&quot;   (total variation between the two orders {report.total_variation:.3f})&quot;)
+print()
+print(&quot;  The first answer also moves the second:&quot;)
+for outcome in (&quot;satisfied&quot;, &quot;dissatisfied&quot;):
+    conditional = forward.conditional_table(economy.name, vote.name)[outcome]
+    print(f&quot;    among respondents who said &#x27;{outcome}&#x27;: &quot;
+          f&quot;p({vote.name} = would vote) = {conditional[&#x27;would vote&#x27;]:.3f}&quot;)
+print()
+
+# ------------------------------------------------- the classical account, and the tests
+classical = law_of_total_probability(
+    economy.name, &quot;satisfied&quot;,
+    forward.marginal(economy.name)[&quot;satisfied&quot;],
+    backward.marginal(vote.name),
+    backward.conditional_table(vote.name, economy.name),
+    conditional_on=vote.name,
+)
+qq = qq_equality(forward, backward, economy.name, vote.name)
+interference = interference_decomposition(belief, economy, vote)
+
+print(&quot;WHAT A CLASSICAL ACCOUNT IS FORCED TO PREDICT&quot;)
+print(&quot;  one joint distribution over the two answers, so the marginal of A cannot depend on the order:&quot;)
+print(f&quot;    measured directly          : {classical.direct:.3f}&quot;)
+print(f&quot;    computed from the other order: {classical.indirect:.3f}&quot;)
+print(f&quot;    violation                   : {classical.violation:+.3f}   (a classical model: exactly 0)&quot;)
+print()
+print(&quot;WHERE THE PROBABILITY COMES FROM&quot;)
+print(&quot;  &quot; + interference.summary())
+print()
+print(&quot;THE PARAMETER-FREE TEST&quot;)
+print(&quot;  &quot; + qq.summary())
+print()
+
+# ------------------------------------------------------- the same numbers, with noise
+sampled = run_sequence(belief, [economy, vote], backend=&quot;aer&quot;, shots=8000, seed=7)
+sampled_backward = run_sequence(belief, [vote, economy], backend=&quot;aer&quot;, shots=8000, seed=7)
+sampled_qq = qq_equality(sampled, sampled_backward, economy.name, vote.name)
+sampled_report = order_effect(sampled, sampled_backward, economy.name, vote.name)
+print(&quot;ON A SIMULATOR, WITH 8000 RESPONDENTS PER ORDER&quot;)
+print(f&quot;  order effect {sampled_report.max_marginal_shift():+.3f} (exact: {report.max_marginal_shift():+.3f})&quot;)
+print(f&quot;  &quot; + sampled_qq.summary())
+print()
+
+# --------------------------------------------------------------- the circuits
+out = ROOT / &quot;out&quot; / &quot;economy_vote&quot;
+out.mkdir(parents=True, exist_ok=True)
+circuits = {
+    &quot;A then B (the whole interview)&quot;: build_sequence_circuit(belief, [economy, vote]),
+    &quot;B then A (the whole interview)&quot;: build_sequence_circuit(belief, [vote, economy]),
+    &quot;branch: A = satisfied&quot;: build_prefix_circuit(belief, [economy, vote], (&quot;satisfied&quot;,)),
+    &quot;branch: A = dissatisfied&quot;: build_prefix_circuit(belief, [economy, vote], (&quot;dissatisfied&quot;,)),
+}
+print(&quot;THE CIRCUITS&quot;)
+for name, circuit in circuits.items():
+    print(f&quot;  {name}&quot;)
+    print(f&quot;    {circuit_text_alternative(circuit)}&quot;)
+    path = out / (name.split(&quot; (&quot;)[0].replace(&quot; &quot;, &quot;_&quot;).replace(&quot;:&quot;, &quot;&quot;).replace(&quot;=&quot;, &quot;&quot;) + &quot;.png&quot;)
+    savefig(circuit_figure(circuit, title=name), path)
+    print(f&quot;    image: {path.relative_to(ROOT)}&quot;)
+print()
+print(&quot;READING THE DRAWINGS&quot;)
+print(&quot;  * the first box prepares the respondent&#x27;s belief - a superposition, not a hidden answer;&quot;)
+print(&quot;  * the next box rotates the state into the basis of &#x27;satisfied with the economy?&#x27; and the&quot;)
+print(&quot;    measurement records the answer; for all but the last question the rotation is undone,&quot;)
+print(&quot;    so the second question is put to the *collapsed* state the first answer left behind -&quot;)
+print(&quot;    that collapse is the whole reason the order matters;&quot;)
+print(&quot;  * the branch circuits need no mid-circuit measurement at all: they prepare the state that&quot;)
+print(&quot;    follows from a given first answer and then ask the second question, which is the form to&quot;)
+print(&quot;    submit to hardware with limited mid-circuit measurement support.&quot;)
+print()
+
+# ------------------------------------------------- and the same thing, packaged
+packaged = qcog.get_model(&quot;question-order&quot;).run(
+    state_angle=RESPONDENT, angle_a=ECONOMY_ANGLE, angle_b=VOTE_ANGLE, sweeps=False
+)
+print(&quot;THE SAME MODEL, PACKAGED&quot;)
+print(f&quot;  {packaged.summary}&quot;)
+print(f&quot;  (qcog run question-order --param state_angle={RESPONDENT} --param angle_a={ECONOMY_ANGLE}&quot;
+      f&quot; --param angle_b={VOTE_ANGLE})&quot;)
+print()
+print(&quot;WHAT THIS DOES NOT CLAIM&quot;)
+for caveat in packaged.caveats:
+    print(f&quot;  - {caveat}&quot;)</code></pre></details>
+</main>
+<footer class="site"><p>Q-Cog, generated from the library. This effort is supported by Qollab &amp; IonQ.</p></footer>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fitting a model to observed response frequencies, and comparing with a baseline. - Q-Cog</title>
+<meta name="description" content="Fitting a model to observed response frequencies, and comparing with a baseline.">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+<header class="site"><div class="brand">Q-Cog</div><nav class="site" aria-label="Site"><ul><li><a href="../index.html">Home</a></li><li><a href="../models/index.html">Models</a></li><li><a href="../notebook.html">Notebook</a></li><li><a href="../examples/index.html" aria-current="page">Examples</a></li><li><a href="../study.html">Study</a></li><li><a href="../docs/index.html">Docs</a></li><li><a href="https://github.com/qcog/qcog">GitHub</a></li></ul></nav></header>
+<main id="main">
+<h1>Fitting a model to observed response frequencies, and comparing with a baseline.</h1>
+<p class="lede-meta">Source: <a href="https://github.com/qcog/qcog/blob/main/demos/examples/04_fit_to_data.py">demos/examples/04_fit_to_data.py</a></p>
+<p>`<code>python demos/examples/04_fit_to_data.py</code>`</p>
+<p>The data file used here is <em>illustrative synthetic data</em> shaped after the qualitative pattern reported in the literature; see `<code>data/README.md</code>`.  Its purpose is to demonstrate the fitting and model-comparison workflow, not to make an empirical claim.</p>
+<h2>Output</h2><pre class="code" data-language="text"><code>Dataset: Two-question order design (illustrative, synthetic)
+Provenance: Cohorts of 400 simulated participants per question order, drawn from the Q-Cog question-order model at the recorded parameters with a fixed seed, shaped after the qualitative pattern reported in Wang &amp; Busemeyer (2013) and Moore (2002). NOT the original published values.
+Responses: 10
+
+Quantum model: fitted state_angle = 1.0887, angle_a = 0.4632, angle_b = 2.0300 | R2 = 0.2544, RMSE = 0.1391, AIC = 3580.85, BIC = 3599.06
+          response  observed  predicted  residual
+      AB: p(A=yes)    0.9650   0.905349 -0.059651
+      AB: p(B=yes)    0.6500   0.501622 -0.148378
+AB: p(B=yes|A=yes)    0.6528   0.502001 -0.150799
+ AB: p(B=yes|A=no)    0.5714   0.497999 -0.073401
+  QQ: agreement AB    0.6450   0.502001 -0.142999
+      BA: p(B=yes)    0.8375   0.794352 -0.043148
+      BA: p(A=yes)    0.6225   0.501178 -0.121322
+BA: p(A=yes|B=yes)    0.6836   0.502001 -0.181599
+ BA: p(A=yes|B=no)    0.3077   0.497999  0.190299
+  QQ: agreement BA    0.6850   0.502001 -0.182999
+
+Classical baseline: fitted p_a = 0.4659, p_b = 0.5842 | R2 = -0.8447, RMSE = 0.2188, AIC = 4254.71, BIC = 4266.85
+
+Comparison: the quantum model is favoured (lower AIC)
+AIC (quantum): 3580.85  AIC (classical): 4254.71
+
+Read the verdict carefully: an information criterion is not proof. The model&#x27;s
+own caveats say so, and the QQ equality - which involves no fitted parameter -
+is the sharper test of the two accounts.
+</code></pre>
+<h2>The code</h2><details><summary>Show the whole script</summary><pre class="code" data-language="python"><code>&quot;&quot;&quot;Fitting a model to observed response frequencies, and comparing with a baseline.
+
+``python demos/examples/04_fit_to_data.py``
+
+The data file used here is *illustrative synthetic data* shaped after the
+qualitative pattern reported in the literature; see ``data/README.md``.  Its purpose
+is to demonstrate the fitting and model-comparison workflow, not to make an
+empirical claim.
+&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / &quot;src&quot;))
+
+from qcog import get_model  # noqa: E402
+from qcog.core.fitting import compare_fits, fit  # noqa: E402
+from qcog.core.params import ParamSpec  # noqa: E402
+
+data_path = Path(__file__).resolve().parents[2] / &quot;src&quot; / &quot;qcog&quot; / &quot;data&quot; / &quot;benchmarks.json&quot;
+bundle = json.loads(data_path.read_text(encoding=&quot;utf-8&quot;))
+dataset = bundle[&quot;question_order_illustrative&quot;]
+
+observed = dataset[&quot;frequencies&quot;]
+counts = dataset[&quot;counts&quot;]
+print(f&quot;Dataset: {dataset[&#x27;name&#x27;]}&quot;)
+print(f&quot;Provenance: {dataset[&#x27;provenance&#x27;]}&quot;)
+print(f&quot;Responses: {len(observed)}&quot;)
+print()
+
+model = get_model(&quot;question-order&quot;)
+
+# The quantum model, with its own two fittable angles.
+quantum_fit = fit(lambda parameters: model.predict(parameters), observed, model.params, counts=counts)
+print(&quot;Quantum model:&quot;, quantum_fit.summary())
+print(quantum_fit.table().to_string(index=False))
+print()
+
+# A classical baseline: the two marginals are fitted, but the joint is forced to be
+# a product, which is what a single classical probability space requires.
+classical_specs = (
+    ParamSpec(&quot;p_a&quot;, &quot;float&quot;, 0.5, low=0.01, high=0.99, fittable=True),
+    ParamSpec(&quot;p_b&quot;, &quot;float&quot;, 0.5, low=0.01, high=0.99, fittable=True),
+)
+
+
+def classical_predict(parameters):
+    p_a, p_b = parameters[&quot;p_a&quot;], parameters[&quot;p_b&quot;]
+    return {
+        &quot;AB: p(A=yes)&quot;: p_a,
+        &quot;AB: p(B=yes)&quot;: p_b,
+        &quot;AB: p(B=yes|A=yes)&quot;: p_b,
+        &quot;AB: p(B=yes|A=no)&quot;: p_b,
+        &quot;BA: p(B=yes)&quot;: p_b,
+        &quot;BA: p(A=yes)&quot;: p_a,
+        &quot;BA: p(A=yes|B=yes)&quot;: p_a,
+        &quot;BA: p(A=yes|B=no)&quot;: p_a,
+        &quot;QQ: agreement AB&quot;: p_a * p_b + (1 - p_a) * (1 - p_b),
+        &quot;QQ: agreement BA&quot;: p_a * p_b + (1 - p_a) * (1 - p_b),
+    }
+
+
+classical_fit = fit(classical_predict, observed, classical_specs, counts=counts)
+print(&quot;Classical baseline:&quot;, classical_fit.summary())
+print()
+
+comparison = compare_fits(quantum_fit, classical_fit)
+print(&quot;Comparison:&quot;, comparison[&quot;verdict&quot;])
+print(&quot;AIC (quantum):&quot;, round(quantum_fit.aic, 2), &quot; AIC (classical):&quot;, round(classical_fit.aic, 2))
+print()
+print(&quot;Read the verdict carefully: an information criterion is not proof. The model&#x27;s&quot;)
+print(&quot;own caveats say so, and the QQ equality - which involves no fitted parameter -&quot;)
+print(&quot;is the sharper test of the two accounts.&quot;)</code></pre></details>
+</main>
+<footer class="site"><p>Q-Cog, generated from the library. This effort is supported by Qollab &amp; IonQ.</p></footer>
+</body>
+</html>

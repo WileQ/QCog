@@ -6,7 +6,7 @@ Thanks for considering it. This project is deliberately built so that contributi
 
 ```bash
 python -m pip install -e ".[app,dev]"
-python -m pytest -q            # 128 tests, about one minute
+python -m pytest -q            # 132 tests, about one minute
 qcog evidence                  # what the library checks about itself
 ```
 
@@ -49,10 +49,12 @@ and the requirement that series styles stay distinguishable.
 ## Before you finish
 
 ```bash
-python -m pytest -q                     # the suite, including the notebook and the docs checks
+python -m pytest -q                     # the suite: library, notebook, website, docs, study
 python scripts/check_figures.py         # every visualization renders, with its description
 python scripts/check_docs.py            # the documentation matches the code
-python scripts/generate_docs.py         # regenerate docs/models.generated.md
+python scripts/build_website.py         # regenerate the static site
+python scripts/check_website.py         # its structure, links and alternative text
+python scripts/generate_docs.py         # regenerate docs/models.generated.md and the quoted counts
 ```
 
 `check_figures.py` is the one to run when you add or change a chart: it builds every figure function on synthetic

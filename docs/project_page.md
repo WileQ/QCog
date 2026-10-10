@@ -63,21 +63,21 @@ that where a classical account fits equally well, it says so.
 
 ### Requirements
 
-Python 3.10+, `qiskit>=2.0`, `qiskit-aer`, `numpy`, `scipy`, `pandas`, `matplotlib`. Optional: `streamlit`
-(interactive explorer), `qiskit-ionq` (IonQ submission path).
+Python 3.10+, `qiskit>=2.0`, `qiskit-aer`, `numpy`, `scipy`, `pandas`, `matplotlib`. Optional: `qiskit-ionq`
+(the IonQ submission path). The website builder needs nothing beyond these.
 
 ### Install and run
 
 ```bash
-python -m pip install -e ".[app,dev]"      # or run from the checkout: the notebook adds src/ itself
+python -m pip install -e ".[dev]"      # or run from the checkout: the notebook adds src/ itself
 
 qcog list                       # the catalogue
 qcog run question-order         # run the flagship model and read its findings
 qcog evidence                   # the self-check table (about a minute)
 qcog report --out out/qcog_report.html --markdown
-streamlit run app/streamlit_app.py
-python examples/01_first_steps.py
-python showcase/run_showcase.py               # a scripted tour with captured output and figures
+python scripts/build_website.py      # regenerate the static site into website/
+python demos/examples/01_first_steps.py
+python demos/showcase/run_showcase.py               # a scripted tour with captured output and figures
 
 qcog circuit quantum-prisoners-dilemma        # draw the model's circuit
 qcog run question-order --fast                # headline numbers without the sweeps
@@ -97,16 +97,18 @@ the code.
 
 ### Guided tours
 
-* **`notebooks/quickstart.ipynb`** - a short, simple notebook built around one real survey: *"Are you satisfied
+* **`demos/quickstart.ipynb`** - a short, simple notebook built around one real survey: *"Are you satisfied
   with the economy?"* and *"Will you vote for the current administration?"*, asked in both orders. It explains
   the state and the questions, reads the order effect, checks the law of total probability and the parameter-free
   QQ equality, draws the circuits with the survey questions on the gates, samples them on a simulator and saves a
   report. Its cells are executed by the test suite, so it always runs.
-* **`examples/06_economy_and_vote.py`** - the same survey as a script, writing the circuit images out.
+* **`demos/examples/06_economy_and_vote.py`** - the same survey as a script, writing the circuit images out.
 * **`showcase/`** - the same ideas as a script, with its captured output, every figure and an HTML report per
   model.
-* **`app/streamlit_app.py`** - the interactive explorer, generated from each model's parameter schema, with
-  dark, larger-type, high-contrast and text-only modes.
+* **`website/`** - the static site, generated from the library (`python scripts/build_website.py`): a page per
+  model with its figures, classical comparison and circuit drawings, the rendered notebook, the examples with
+  their captured output, and the study. It is published on GitHub Pages by a workflow, needs no server, and works
+  from a local folder as well as over the web.
 
 ### The shortest complete example
 
@@ -151,7 +153,7 @@ with order-dependent joints, and the beta-binomial as a classical model of over-
 Everything needed to reproduce every number in this project is in the repository, and the checks are
 executable:
 
-* `python -m pytest -q` runs 128 tests covering states, questions, channels, backends, analysis, classical
+* `python -m pytest -q` runs 132 tests covering states, questions, channels, backends, analysis, classical
   baselines, fitting, the CLI, the reports, the figures and every model's central claim.
 * `qcog evidence` prints the evidence table: the interference decomposition, the QQ equality, the classical
   limits, the circuit-versus-analytic parity, the game-theory checks, the entanglement calibration, and a run of
@@ -183,9 +185,10 @@ Industry best practices for UI accessibility are followed by construction:
 * every figure carries a plain-language description on the figure object, and the report embeds it as alt text
   plus a long description, with the underlying data table next to it;
 * the colour-blind-safe Okabe-Ito palette, with no information carried by colour alone;
-* semantic HTML with a skip link, ordered headings, table captions and `scope` attributes, visible focus
-  outlines; Streamlit's labelled native controls in the explorer;
-* dark-background, larger-type, high-contrast and text-only modes;
+* semantic HTML with a skip link, ordered headings, table captions and `scope` attributes, and visible focus
+  outlines, in the reports and on the [website](../website/);
+* the site follows the reader's system preference for a dark background, and works with images disabled because
+  every chart carries its description and its data table;
 * explanations written in plain language and generated from the computed numbers.
 
 Details and verification instructions: [`accessibility.md`](accessibility.md).

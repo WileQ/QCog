@@ -230,7 +230,7 @@ show up as over-dispersion relative to the independent binomial.
 `qcog evidence` prints the table; the same table is embedded in the generated report. The checks are listed in
 the README. Two remarks on method:
 
-* the checks are *executable* rather than textual, so a regression fails the test suite (128 tests) and the
+* the checks are *executable* rather than textual, so a regression fails the test suite (132 tests) and the
   evidence table;
 * the checks deliberately include the classical limits (zero entanglement, zero sharpness, commuting questions,
   full decoherence), because a model that only "works" away from its own limits is usually wrong.

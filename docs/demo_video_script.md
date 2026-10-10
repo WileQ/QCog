@@ -15,7 +15,7 @@ pre-generate the report (`qcog report`) so the last section loads instantly.
 
 ### 0:15 - 0:45 | The flagship result
 
-**Screen:** run `python examples/01_first_steps.py` (or paste the four-line example) and show the output.
+**Screen:** run `python demos/examples/01_first_steps.py` (or paste the four-line example) and show the output.
 
 ```python
 from qcog import basis_state, question, run_sequence, order_effect, qq_equality
@@ -51,8 +51,8 @@ parity rows.
 
 ### 1:45 - 2:15 | Twenty-three models, one workflow
 
-**Screen:** `qcog list`, then the explorer (`streamlit run app/streamlit_app.py`) changing a parameter and
-showing a model re-run. If short on time, show the catalogue report instead.
+**Screen:** `qcog list`, then the [website](../website/index.html) - a model page with its figures, its
+classical comparison and its circuit drawings. If short on time, show the catalogue report instead.
 
 > "Twenty-three models in four modules: individual judgement, concepts and memory, strategic decisions, and
 > groups. Each one reports the classical baseline for the same situation, its own caveats, and a plain-language

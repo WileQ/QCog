@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>accessibility - Q-Cog</title>
+<meta name="description" content="accessibility">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+<header class="site"><div class="brand">Q-Cog</div><nav class="site" aria-label="Site"><ul><li><a href="../index.html">Home</a></li><li><a href="../models/index.html">Models</a></li><li><a href="../notebook.html">Notebook</a></li><li><a href="../examples/index.html">Examples</a></li><li><a href="../study.html">Study</a></li><li><a href="../docs/index.html" aria-current="page">Docs</a></li><li><a href="https://github.com/qcog/qcog">GitHub</a></li></ul></nav></header>
+<main id="main">
+<h1 id="accessibility">Accessibility</h1>
+<p>The submission requirement is to "follow industry best practices on UI accessibility". This document states what Q-Cog does, and - more usefully - how anyone can verify it.</p>
+<h2 id="principles-applied">Principles applied</h2>
+<ol><li><strong>Perceivable.</strong> Nothing essential is conveyed by colour, position or animation alone. Every figure is accompanied by (a) a caption, (b) a long description in plain language, and (c) the data table it was drawn from, so every number in every chart is reachable as text.</li><li><strong>Operable.</strong> The command line needs no pointer. The explorer uses standard, labelled native controls (sliders, select boxes, checkboxes, buttons) that are keyboard operable and announced by screen readers. The HTML report starts with a skip link, has a logical tab order and shows a visible focus outline on every interactive element.</li><li><strong>Understandable.</strong> Explanations are short, rule-based sentences generated from the computed numbers, so they cannot drift from the data. Each model states its cognitive question, its mechanism, its classical baseline and its caveats in the same order, everywhere.</li><li><strong>Robust.</strong> The report is self-contained HTML: no JavaScript, no external assets, no network. It renders in any browser and remains readable with images disabled.</li></ol>
+<h2 id="colour">Colour</h2>
+<ul><li>The colour-blind-safe Okabe-Ito palette (<code>qcog.viz.PALETTE</code>) is used for every figure and the report. Eight of its colours form the line/series cycle (<code>qcog.viz.CATEGORICAL</code>); the pale yellow is kept for areas and annotations because a pale line on a white page is not readable.</li><li><strong>Series differ by more than hue.</strong> <code>qcog.viz.series_style(index)</code> returns a colour <em>and</em> a linestyle <em>and</em> a marker, cycling colour first, then linestyle, then marker - so up to 8 x 4 x 8 series stay distinguishable, and two series never differ only by colour. Bar charts use hatches for the same reason, and the classical-comparison chart draws the baseline as a hatched outline and the model as a solid bar, so the pair reads in greyscale.</li><li>No series is identified by colour alone: bars are labelled with their values, differences are printed as signed numbers, and legends are always paired with axis labels or direct text.</li><li>A high-contrast mode is one checkbox away in the explorer (black background, white text, underlined links).</li><li>Matplotlib is put in the headless <code>Agg</code> backend only when the library is <em>not</em> running inside a notebook or another interactive session, so charts render inline for a Jupyter user (see <code>demos/quickstart.ipynb</code>) and still work in scripts, servers and report generation.</li></ul>
+<h2 id="text-alternatives">Text alternatives</h2>
+<p>The mechanism is simple and enforced by construction: figures are created through <code>qcog.viz</code>, which attaches a plain-language description to the figure object itself (<code>figure._qcog_description</code>) plus optional extra sentences. <code>qcog.viz.text_alternatives(figures)</code> returns them; the report embeds the description as the image's <code>alt</code> attribute and inside a <code>&lt;figcaption&gt;</code>, and the long form inside a <code>&lt;details&gt;</code> element. A chart therefore <em>cannot</em> be exported without an accessible alternative, because the description travels with the object.</p>
+<p>An example of what a description looks like:</p>
+<blockquote>Bar chart decomposing p(B) into the classical (law of total probability) contribution and the interference contribution. yes: classical 0.764 plus interference -0.236 equals 0.528; no: classical 0.236 plus interference 0.236 equals 0.472.</blockquote>
+<h2 id="controls-keyboard-and-screen-readers">Controls, keyboard and screen readers</h2>
+<ul><li>The HTML report contains <code>&lt;nav aria-label="Contents"&gt;</code>, one <code>&lt;h1&gt;</code>, ordered headings, <code>&lt;section&gt;</code>s with <code>aria-labelledby</code>, a skip link that becomes visible on focus, table <code>&lt;caption&gt;</code>s and <code>scope="col"</code> headers, and <code>:focus-visible</code> outlines (3 px, high contrast).</li><li>Every page of the <a href="https://github.com/qcog/qcog/blob/main/website/">website</a> is static semantic HTML: a skip link, headings in order, a navigation landmark with <code>aria-current</code> on the active page, alternative text on every figure, and visible focus outlines. Each parameter's <code>description</code> from its <code>ParamSpec</code> is the text used in the documentation, the tables and the generated pages, so the same explanation reaches every reader.</li><li>Reading options: the site follows the system colour-scheme preference and stays readable with images disabled, because every chart appears with its description and with the data table it was drawn from.</li></ul>
+<h2 id="language">Language</h2>
+<ul><li>Every model's finding sentences are generated from computed values by <code>qcog.explain</code> and the model classes.</li><li>Parameters carry human-readable labels and descriptions (<code>ParamSpec.label</code> / <code>.description</code>), used as the widget labels, CLI help and documentation text - one declaration, three surfaces.</li><li>Caveats are written as complete sentences about what the model does <em>not</em> claim.</li></ul>
+<h2 id="charts-in-a-notebook">Charts in a notebook</h2>
+<p><code>demos/quickstart.ipynb</code> is the accessible-by-example tour: it prints the classical comparison as a table <em>and</em> shows the chart with its description underneath, draws the circuit with an adjustable style, and saves a report. The notebook's cells are executed by the test suite from top to bottom, so it cannot rot.</p>
+<h2 id="verifying-it">Verifying it</h2>
+<pre class="code" data-language="bash"><code>qcog report --out out/qcog_report.html</code></pre>
+<p>Then inspect the generated file (it is plain text) and check:</p>
+<pre class="code" data-language="bash"><code>python - &lt;&lt;&#x27;PY&#x27;
+from pathlib import Path
+html = Path(&quot;out/qcog_report.html&quot;).read_text(encoding=&quot;utf-8&quot;)
+for needle in (&#x27;lang=&quot;en&quot;&#x27;, &#x27;class=&quot;skip&quot;&#x27;, &#x27;aria-labelledby&#x27;, &#x27;&lt;figcaption&gt;&#x27;, &#x27;alt=&quot;&#x27;,
+               &#x27;&lt;caption&gt;&#x27;, &#x27;scope=&quot;col&quot;&#x27;, &#x27;focus-visible&#x27;, &#x27;prefers-color-scheme&#x27;):
+    print(f&quot;{needle:22s}&quot;, needle in html)
+PY</code></pre>
+<p>Two further checks keep the charts honest. <code>qcog.viz.structure_checks()</code> reads each drawing back - bar heights, stacked tops, line data, heatmap cells, the Bloch vector, the circuit's own statistics - and compares it with the numbers that produced it, so a chart that renders but shows the wrong data fails; <code>python scripts/check_figures.py</code> runs that audit together with the render checks. And a figure that would mislabel itself is drawn differently rather than misleadingly: when two questions have different outcome labels, the marginal chart uses one panel per question instead of grouping bars under shared labels.</p>
+<p>Automated checks are also part of the test suite (<code>tests/test_cli_and_report.py::test_model_report_is_accessible</code>), so a regression that removes the skip link, the alt text or the captions fails the build. Two further checks cover the charts themselves: <code>python scripts/check_figures.py</code> renders every figure function and every model's figures and fails if one is broken or lacks its description, and <code>tests/test_circuits_and_comparison.py</code> asserts that series styles stay distinguishable and that the comparison chart separates its two series by a hatch.</p>
+<h2 id="known-limits">Known limits</h2>
+<ul><li>The figures are static images. The <strong>data tables</strong> are the accessible equivalent, and the text descriptions give the values that matter; a colour-vision or screen-reader user should use those, not the PNGs.</li><li>The website is generated, so its content is identical to what the CLI and the reports produce; the CLI remains the surface with no HTML at all.</li><li>Mathematical notation is written in ASCII in the interface and in LaTeX-free prose in the reports, so it is read correctly by speech synthesisers.</li></ul>
+</main>
+<footer class="site"><p>Q-Cog, generated from the library. This effort is supported by Qollab &amp; IonQ.</p></footer>
+</body>
+</html>

@@ -25,7 +25,6 @@ documented in the code.
 | [Qiskit Aer](https://github.com/Qiskit/qiskit-aer) | shot-based circuit simulation | Apache-2.0 |
 | NumPy, SciPy, pandas | numerics, optimisation, statistics, tables | BSD-3-Clause |
 | Matplotlib | figures | PSF-based (BSD-compatible) |
-| Streamlit | interactive explorer | Apache-2.0 |
 | pytest | test runner | MIT |
 | qiskit-ionq (optional) | hardware/simulator submission path | Apache-2.0 |
 

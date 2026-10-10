@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>building and publishing the package - Q-Cog</title>
+<meta name="description" content="building and publishing the package">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+<header class="site"><div class="brand">Q-Cog</div><nav class="site" aria-label="Site"><ul><li><a href="../index.html">Home</a></li><li><a href="../models/index.html">Models</a></li><li><a href="../notebook.html">Notebook</a></li><li><a href="../examples/index.html">Examples</a></li><li><a href="../study.html">Study</a></li><li><a href="../docs/index.html" aria-current="page">Docs</a></li><li><a href="https://github.com/qcog/qcog">GitHub</a></li></ul></nav></header>
+<main id="main">
+<h1 id="building-and-publishing-the-package">Building and publishing the package</h1>
+<p>What is already in place, what only you can do, and how to check each step.  The short version:</p>
+<pre class="code" data-language="bash"><code>python -m pip install --upgrade pip wheel build twine
+## edit the version in pyproject.toml, set your repository URLs, commit, and tag it
+python -m build                      # dist/qcog-&lt;version&gt;.tar.gz and a wheel
+python -m twine check dist/*         # renders the README exactly as PyPI will
+python -m twine upload dist/*        # or: push the tag and let the workflow publish</code></pre>
+<p>After that, anyone can <code>pip install qcog</code>.</p>
+<h2 id="what-the-repository-already-provides">What the repository already provides</h2>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Piece</th><th scope="col">Where</th></tr></thead>
+<tbody>
+<tr><td>Build system and metadata</td><td><code>pyproject.toml</code> (setuptools, <code>src/</code> layout, Python &gt;= 3.10)</td></tr>
+<tr><td>Runtime dependencies</td><td><code>numpy</code>, <code>scipy</code>, <code>pandas</code>, <code>matplotlib</code>, <code>qiskit</code>, <code>qiskit-aer</code></td></tr>
+<tr><td>Optional extras</td><td><code>[ionq]</code> for the IonQ path, <code>[dev]</code> for the tests, <code>[release]</code> for <code>build</code> and <code>twine</code></td></tr>
+<tr><td>Console command</td><td><code>qcog = "qcog.cli:main"</code>, plus <code>python -m qcog</code> and <code>python -m qcog.website</code></td></tr>
+<tr><td>Package data</td><td>the illustrative datasets and the website stylesheet, declared under <code>[tool.setuptools.package-data]</code></td></tr>
+<tr><td>Licence</td><td><code>LICENSE</code> (MIT), also declared in <code>pyproject.toml</code></td></tr>
+<tr><td>Long description</td><td><code>README.md</code> (rendered on the PyPI page)</td></tr>
+<tr><td>CI publishing</td><td><code>.github/workflows/release.yml</code> (build, check, smoke-install, publish)</td></tr>
+</tbody></table></div>
+<h2 id="what-you-have-to-do">What you have to do</h2>
+<ol><li><strong>Check the name.</strong> <code>qcog</code> has to be free on PyPI: <code>python -m pip index versions qcog</code> (or search on pypi.org). If it is taken, change <code>name = "qcog"</code> in <code>pyproject.toml</code> to something you own - for example <code>qcog-cognition</code> - and keep the import name (<code>qcog</code>) as it is. The import name and the distribution name do not have to match.</li><li><strong>Point the URLs at your repository.</strong> In <code>pyproject.toml</code>, <code>[project.urls]</code> has placeholder links; replace them with yours. The same URL appears in <code>src/qcog/website/build.py</code> (<code>DEFAULT_REPO_URL</code>, used for source links on the site) and in the README's clone line. One edit each, or pass <code>--repo-url</code> when building the site.</li><li><strong>Decide the version.</strong> <code>version = "0.1.0"</code> in <code>pyproject.toml</code>. Bump it for every upload: PyPI refuses a version that already exists, and there is no way to replace one (you can only <em>yank</em> it, which hides it from new installs). Tag the release commit with the same number, <code>v0.1.0</code>.</li><li><strong>Install the tools.</strong> <code>python -m pip install --upgrade pip wheel build twine</code>. <code>wheel</code> is needed to build a wheel; without it the build fails with <code>invalid command 'bdist_wheel'</code>.</li><li><strong>Build.</strong> <code>python -m build</code> writes <code>dist/qcog-&lt;version&gt;.tar.gz</code> and <code>dist/qcog-&lt;version&gt;-py3-none-any.whl</code>.</li><li><strong>Check the metadata.</strong> <code>python -m twine check dist/*</code> reports any problem PyPI would reject, and renders the long description as PyPI will.</li><li><strong>Install your own artefact and run it</strong>, which is the only check that really counts:</li></ol>
+<pre class="code" data-language="bash"><code>   python -m venv /tmp/smoke &amp;&amp; /tmp/smoke/bin/python -m pip install dist/*.whl
+   /tmp/smoke/bin/python -c &quot;import qcog; print(qcog.__version__)&quot;
+   /tmp/smoke/bin/qcog evidence</code></pre>
+<ol><li><strong>Dry run on TestPyPI</strong> (optional but cheap):</li></ol>
+<pre class="code" data-language="bash"><code>   python -m twine upload --repository testpypi dist/*
+   python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple qcog</code></pre>
+<ol><li><strong>Publish.</strong> Either <code>python -m twine upload dist/*</code> with an API token, or - recommended - push a tag and let <code>.github/workflows/release.yml</code> publish with <strong>trusted publishing</strong>, so no token is stored anywhere. Set it up once at &lt;https://pypi.org/manage/account/publishing/&gt; with the owner, the repository name, the workflow <code>release.yml</code> and the environment <code>pypi</code>; TestPyPI needs its own entry. The workflow also verifies the metadata, installs the built wheel into a clean environment and imports it before publishing, so a broken wheel cannot reach PyPI.</li><li><strong>Keep releasing.</strong> <code>pip install qcog</code> for users, <code>pip install -U qcog</code> to upgrade. For a documentation-only change, release a patch version; for a new model or a new option, a minor one.</li></ol>
+<h2 id="two-details-worth-knowing">Two details worth knowing</h2>
+<ul><li><strong>Relative links in the README.</strong> PyPI renders the README on its own, without your repository's file tree, so links such as <code>docs/packaging.md</code> do not resolve there (they work on GitHub). <code>twine check</code> does not complain about it. If that matters to you, use absolute <code>https://github.com/&lt;you&gt;/&lt;repo&gt;/blob/main/...</code> links in the README; the rest of the documentation can keep using relative links, since it is read on the site and on GitHub.</li><li><strong>What ships in the wheel.</strong> The package, its data files and the website stylesheet. The demos, the study, the tests and the generated site are <em>not</em> installed - they live in the repository - so <code>pip install qcog</code> gives a lean library.</li></ul>
+<h2 id="what-was-verified-here">What was verified here</h2>
+<ul><li><code>python -m pip install -e .</code> works from a checkout (perform it in a virtual environment).</li><li>the source distribution builds and contains the package, the datasets, the website stylesheet and the licence: <code>python -c "import setuptools.build_meta as bm; print(bm.build_sdist('dist'))"</code> produced an 86-member archive.</li><li>the metadata is valid: the build completed with no metadata error, and the console entry point and the extras appear in the generated <code>PKG-INFO</code>.</li><li>building a <em>wheel</em> needs the <code>wheel</code> package, which is not installed in every environment (it was missing in the one used here); step 4 above covers it, and the release workflow installs it before building.</li></ul>
+<p>The remaining steps in the list above - the name check, the TestPyPI dry run and the final upload - need your PyPI account, so they are the part only you can do.</p>
+</main>
+<footer class="site"><p>Q-Cog, generated from the library. This effort is supported by Qollab &amp; IonQ.</p></footer>
+</body>
+</html>

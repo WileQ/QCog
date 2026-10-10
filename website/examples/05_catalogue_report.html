@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Run every model, print the self-check table, and write the full report. - Q-Cog</title>
+<meta name="description" content="Run every model, print the self-check table, and write the full report.">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+<header class="site"><div class="brand">Q-Cog</div><nav class="site" aria-label="Site"><ul><li><a href="../index.html">Home</a></li><li><a href="../models/index.html">Models</a></li><li><a href="../notebook.html">Notebook</a></li><li><a href="../examples/index.html" aria-current="page">Examples</a></li><li><a href="../study.html">Study</a></li><li><a href="../docs/index.html">Docs</a></li><li><a href="https://github.com/qcog/qcog">GitHub</a></li></ul></nav></header>
+<main id="main">
+<h1>Run every model, print the self-check table, and write the full report.</h1>
+<p class="lede-meta">Source: <a href="https://github.com/qcog/qcog/blob/main/demos/examples/05_catalogue_report.py">demos/examples/05_catalogue_report.py</a></p>
+<p>`<code>python demos/examples/05_catalogue_report.py [--max-models N]</code>`</p>
+<p class="lede-meta">This script is not run while the site is built; run it yourself to see its output.</p>
+<h2>The code</h2><details><summary>Show the whole script</summary><pre class="code" data-language="python"><code>&quot;&quot;&quot;Run every model, print the self-check table, and write the full report.
+
+``python demos/examples/05_catalogue_report.py [--max-models N]``
+&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import sys
+import time
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / &quot;src&quot;))
+
+from qcog import run_evidence, write_catalogue_report, write_markdown_report  # noqa: E402
+from qcog.registry import MODELS, models_by_module  # noqa: E402
+
+limit = None
+if &quot;--max-models&quot; in sys.argv:
+    limit = int(sys.argv[sys.argv.index(&quot;--max-models&quot;) + 1])
+
+print(&quot;Q-Cog catalogue&quot;)
+print(&quot;=&quot; * 78)
+for letter, models in models_by_module().items():
+    print(f&quot;Module {letter}: {models[0].module_title()} ({len(models)} models)&quot;)
+
+print()
+print(&quot;Evidence: what the library checks about itself&quot;)
+print(&quot;=&quot; * 78)
+started = time.time()
+for row in run_evidence():
+    print(f&quot;{row[&#x27;result&#x27;]:4s} {row[&#x27;check&#x27;]}&quot;)
+print(f&quot;({time.time() - started:.1f} s)&quot;)
+
+print()
+started = time.time()
+html_path = write_catalogue_report(&quot;out/qcog_report.html&quot;, max_models=limit, include_figures=True)
+markdown_path = write_markdown_report(&quot;out/qcog_report.md&quot;, max_models=limit)
+print(f&quot;HTML report   : {html_path} ({html_path.stat().st_size / 1024:.0f} KB)&quot;)
+print(f&quot;Markdown report: {markdown_path} ({markdown_path.stat().st_size / 1024:.0f} KB)&quot;)
+print(f&quot;({time.time() - started:.1f} s for {limit or len(MODELS)} models)&quot;)</code></pre></details>
+</main>
+<footer class="site"><p>Q-Cog, generated from the library. This effort is supported by Qollab &amp; IonQ.</p></footer>
+</body>
+</html>

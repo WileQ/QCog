@@ -69,10 +69,18 @@ classical conjunction bound, Condorcet's theorem, the classical mixed-strategy e
 
 ## Install
 
+From PyPI (once released - the release procedure is in [`docs/packaging.md`](docs/packaging.md)):
+
+```bash
+pip install qcog
+```
+
+From a checkout, which is what you want if you are changing the library:
+
 ```bash
 git clone <this repository> qcog && cd qcog
-python -m pip install -e .                 # library only
-python -m pip install -e ".[app,dev]"      # + interactive explorer + tests
+python -m pip install -e .                 # the library
+python -m pip install -e ".[dev]"          # + the test runner and the release tools
 ```
 
 Requires Python 3.10+ and `qiskit>=2.0`, `qiskit-aer`, `numpy`, `scipy`, `pandas`, `matplotlib`.
@@ -213,16 +221,21 @@ qcog evidence                              # what the library checks about itsel
 qcog backends                              # the available execution backends
 ```
 
-## Interactive explorer
+## Website
 
 ```bash
-streamlit run app/streamlit_app.py
+python scripts/build_website.py            # regenerate the site into website/
 ```
 
-The explorer is generated from the model metadata: choose a model, adjust its parameters, pick a backend, and
-read the findings, the classical comparison, the explanation of the order effect or the interference term, the
-figures (each with its text description), and the data tables. Accessibility options - dark background, larger
-type, high contrast, text-only mode - are one checkbox away, and a per-run HTML report can be downloaded.
+[`website/`](website/) is a **static** site - plain HTML, one stylesheet, no JavaScript, no server - generated
+from the library itself: an overview, a page per model with its figures, its classical comparison and its circuit
+drawings, the rendered notebook, the examples with their captured output, the comparative study, and the written
+documentation. Every chart on it is a graph with alt text and the data table beside it.
+
+Because it is static it is also the published site: [`.github/workflows/pages.yml`](.github/workflows/pages.yml)
+builds it on every push to `main` and deploys it to GitHub Pages, so the tools are browsable without installing
+anything. (It replaces the Streamlit explorer the project used to ship: a server was one more thing to run, and the
+site reaches the same content with no dependencies at all.)
 
 ## Reports you can publish
 
@@ -261,7 +274,7 @@ failure is visible rather than silent. The checks include:
 Two execution paths are implemented from *one* definition - projectors - and compared: the analytic engine
 (Qiskit `Statevector`/`DensityMatrix`) and compiled circuits on `qiskit-aer`. Agreement between them is what
 makes the compilation, the collapse semantics and the frame bookkeeping trustworthy. The test suite
-(128 tests) additionally covers states, measurements, channels, backends, analysis, baselines, fitting, the CLI,
+(132 tests) additionally covers states, measurements, channels, backends, analysis, baselines, fitting, the CLI,
 the reports, every visualization and every model's central claims; `python scripts/check_figures.py` renders every
 chart the library can draw - 11 figure functions and every model's figure set - and fails if one is broken or has
 lost its text description.
@@ -280,9 +293,9 @@ Industry best practices are followed by construction, not by convention:
 * **Colour**: the colour-blind-safe Okabe-Ito palette; no information is carried by colour alone (bars are
   labelled, deltas are printed).
 * **Keyboard and screen readers**: semantic HTML with a skip link, headings in order, table captions and
-  `scope` attributes, visible `:focus-visible` outlines, and Streamlit's labelled native controls.
-* **Reading comfort**: a dark-background option, a larger-type option, a high-contrast option and a text-only
-  mode that removes images entirely.
+  `scope` attributes, and visible `:focus-visible` outlines - in the reports and on the website.
+* **Reading comfort**: the site follows the reader's system preference for a dark background, and every chart is
+  accompanied by the data table behind it, so the numbers are reachable without seeing the image.
 * **Plain language**: explanations are rule-based sentences generated from the numbers, not decorative prose.
 
 Run `qcog report` and open the HTML: the accessibility features are inspectable in a text editor.
@@ -320,26 +333,31 @@ src/qcog/
   selftest.py    the evidence table
   registry.py    the catalogue
   data/          illustrative datasets with provenance notes
-app/             Streamlit explorer
-examples/        six runnable scripts, from five minutes to the full catalogue
-notebooks/       quickstart.ipynb - a short, simple notebook tour
-showcase/        a top-level demo: script + captured output + figures + HTML reports
-studies/         a study of five cases where the quantum account beats the classical one
-scripts/         documentation and figure generators, plus the two checkers
-tests/           128 tests
-docs/            project page, methodology, accessibility, demo script, submission notes
+demos/           everything for a reader who wants to *use* it
+  quickstart.ipynb   the survey walkthrough, with its outputs
+  examples/          six runnable scripts, one task per file
+  showcase/          a scripted tour with its captured output and reports
+studies/         five measured cases where the quantum account beats the classical one
+website/         the generated static site (published on GitHub Pages)
+scripts/         generators and checkers: docs, figures, website
+tests/           132 tests
+docs/            project page, methodology, accessibility, packaging, demo script
+.github/         workflows: build and deploy the site, build and publish the package
 ```
 
 ## Documentation
 
-* [`notebooks/quickstart.ipynb`](notebooks/quickstart.ipynb) - a short notebook tour built around one real
+* [`website/`](website/) - the static site: models, figures, circuits, examples, study and documentation,
+  published on GitHub Pages by the workflow in `.github/workflows/`.
+* [`docs/packaging.md`](docs/packaging.md) - how to build, check and publish the package to PyPI.
+* [`demos/quickstart.ipynb`](demos/quickstart.ipynb) - a short notebook tour built around one real
   survey: *"Are you satisfied with the economy?"* and *"Will you vote for the current administration?"*, asked in
   both orders. Run a model, change a parameter, read the classical comparison, draw the circuits with the survey
   questions on the gates, sample it on a simulator, save a report.
-* [`examples/06_economy_and_vote.py`](examples/06_economy_and_vote.py) - the same survey as a script, with every
+* [`demos/examples/06_economy_and_vote.py`](demos/examples/06_economy_and_vote.py) - the same survey as a script, with every
   circuit written out as an image.
-* [`showcase/`](showcase/) - runnable demonstration with its captured output, figures and HTML reports
-  (`python showcase/run_showcase.py`, or `--all` for the whole catalogue).
+* [`showcase/`](demos/showcase/) - runnable demonstration with its captured output, figures and HTML reports
+  (`python demos/showcase/run_showcase.py`, or `--all` for the whole catalogue).
 * [`studies/quantum_advantage/`](studies/quantum_advantage/) - five measured cases where the quantum account
   does better than the classical one, each labelled with the sense of "better" it uses, with its report,
   `results.json` and one graph per case. Two of the five include a classical model that is *not* rejected.

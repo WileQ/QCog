@@ -7,5 +7,5 @@ qiskit>=2.0
 qiskit-aer>=0.15
 
 # Optional extras
-# streamlit>=1.30   # interactive accessibility-first explorer (pip install -e ".[app]")
-# qiskit-ionq>=0.5  # run the same circuits on IonQ's simulator/hardware (pip install -e ".[ionq]")
+# qiskit-ionq>=0.5  # run the same circuits on IonQ's simulator or hardware (pip install -e ".[ionq]")
+# build>=1.2 twine>=5.0  # for releasing the package (pip install -e ".[release]")
