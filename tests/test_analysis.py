@@ -70,20 +70,37 @@ def test_qq_equality_holds_for_incompatible_questions(pair):
     assert report.satisfied
 
 
-def test_qq_equality_reports_scalar_differences_when_labels_differ():
+def test_qq_equality_needs_two_dichotomous_questions():
+    """Worded differently is fine; three outcomes is not."""
+    from qcog.core.measurement import ProjectiveMeasurement, observable_measurement
+
     state = basis_state(0, 2)
     two_outcome = question(np.pi / 2, 0.0, "X", ("yes", "no"))
-    three_outcome = __import__("qcog.core", fromlist=["question"]).question
-    from qcog.core.measurement import ProjectiveMeasurement
-
-    odd = ProjectiveMeasurement(
-        "odd",
-        ("low", "high"),
+    differently_worded = ProjectiveMeasurement(
+        "worded",
+        ("would vote", "would not vote"),
         (np.diag([1.0, 0.0]).astype(complex), np.diag([0.0, 1.0]).astype(complex)),
     )
-    report = qq_equality(run_sequence(state, [two_outcome, odd]), run_sequence(state, [odd, two_outcome]), "X", "odd")
-    assert not report.applicable
-    assert "not applicable" in report.summary()
+    report = qq_equality(
+        run_sequence(state, [two_outcome, differently_worded]),
+        run_sequence(state, [differently_worded, two_outcome]),
+        "X",
+        "worded",
+    )
+    assert report.applicable, "a different wording must not disable the equality"
+    assert abs(report.difference) < 1e-9
+
+    qutrit = amplitudes(0.5, 0.7, 0.5)
+    three_outcome = observable_measurement("senses", np.diag([1.0, 2.0, 3.0]), ("low", "mid", "high"))
+    also_three = observable_measurement("categories", np.diag([3.0, 2.0, 1.0]), ("A", "B", "C"))
+    odd = qq_equality(
+        run_sequence(qutrit, [three_outcome, also_three]),
+        run_sequence(qutrit, [also_three, three_outcome]),
+        "senses",
+        "categories",
+    )
+    assert not odd.applicable
+    assert "not applicable" in odd.summary()
 
 
 def test_entanglement_report_calibration():

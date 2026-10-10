@@ -6,8 +6,10 @@
     python scripts/check_figures.py --no-sweeps           # faster: skip the parameter sweeps
     python scripts/check_figures.py --standalone-only     # just the figure functions
 
-Exits non-zero if any figure fails to render or lacks its accessible description, so it
-can be used as a check in a pipeline as well as by hand.
+Three passes: every figure function on synthetic input, every figure *content* checked against
+the numbers that produced it, and every model's whole figure set. Exits non-zero if anything
+fails to render, lacks its accessible description, or draws something other than its data, so
+it can be used as a check in a pipeline as well as by hand.
 """
 
 from __future__ import annotations
@@ -20,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
-from qcog.viz import catalogue_checks, standalone_checks  # noqa: E402
+from qcog.viz import catalogue_checks, standalone_checks, structure_checks  # noqa: E402
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -29,10 +31,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--models", nargs="+", default=None, help="model slugs to check")
     parser.add_argument("--no-sweeps", action="store_true", help="skip the models' parameter sweeps")
     parser.add_argument("--standalone-only", action="store_true", help="check only the figure functions")
+    parser.add_argument("--structure-only", action="store_true", help="check only the data behind the drawings")
     args = parser.parse_args(argv)
 
-    rows = standalone_checks(args.out)
-    if not args.standalone_only:
+    if args.structure_only:
+        rows = structure_checks()
+    else:
+        rows = standalone_checks(args.out)
+        rows += structure_checks()      # the drawing must match the data it came from
+    if not (args.standalone_only or args.structure_only):
         rows += catalogue_checks(args.models, args.out, sweeps=not args.no_sweeps)
 
     width = max(len(row["name"]) for row in rows) + 2

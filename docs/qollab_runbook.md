@@ -36,7 +36,7 @@ environment is consistent: it cross-checks the analytic and circuit paths.
 
 ```bash
 python -m pip install -e ".[app]"
-python -m pytest -q                 # 120 tests, about a minute
+python -m pytest -q                 # 121 tests, about a minute
 qcog evidence                       # the self-check table
 qcog report --out out/qcog_report.html --markdown
 python examples/05_catalogue_report.py

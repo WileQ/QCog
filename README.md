@@ -261,7 +261,7 @@ failure is visible rather than silent. The checks include:
 Two execution paths are implemented from *one* definition - projectors - and compared: the analytic engine
 (Qiskit `Statevector`/`DensityMatrix`) and compiled circuits on `qiskit-aer`. Agreement between them is what
 makes the compilation, the collapse semantics and the frame bookkeeping trustworthy. The test suite
-(120 tests) additionally covers states, measurements, channels, backends, analysis, baselines, fitting, the CLI,
+(121 tests) additionally covers states, measurements, channels, backends, analysis, baselines, fitting, the CLI,
 the reports, every visualization and every model's central claims; `python scripts/check_figures.py` renders every
 chart the library can draw - 11 figure functions and every model's figure set - and fails if one is broken or has
 lost its text description.
@@ -321,18 +321,22 @@ src/qcog/
   registry.py    the catalogue
   data/          illustrative datasets with provenance notes
 app/             Streamlit explorer
-examples/        five runnable scripts, from five minutes to the full catalogue
+examples/        six runnable scripts, from five minutes to the full catalogue
 notebooks/       quickstart.ipynb - a short, simple notebook tour
 showcase/        a top-level demo: script + captured output + figures + HTML reports
 scripts/         documentation and figure generators, plus the two checkers
-tests/           120 tests
+tests/           121 tests
 docs/            project page, methodology, accessibility, demo script, submission notes
 ```
 
 ## Documentation
 
-* [`notebooks/quickstart.ipynb`](notebooks/quickstart.ipynb) - a short notebook tour: run a model, change a
-  parameter, read the classical comparison, draw the circuit, sample it on a simulator, save a report.
+* [`notebooks/quickstart.ipynb`](notebooks/quickstart.ipynb) - a short notebook tour built around one real
+  survey: *"Are you satisfied with the economy?"* and *"Will you vote for the current administration?"*, asked in
+  both orders. Run a model, change a parameter, read the classical comparison, draw the circuits with the survey
+  questions on the gates, sample it on a simulator, save a report.
+* [`examples/06_economy_and_vote.py`](examples/06_economy_and_vote.py) - the same survey as a script, with every
+  circuit written out as an image.
 * [`showcase/`](showcase/) - runnable demonstration with its captured output, figures and HTML reports
   (`python showcase/run_showcase.py`, or `--all` for the whole catalogue).
 * [`scripts/check_figures.py`](scripts/check_figures.py) - renders every visualization and reports;

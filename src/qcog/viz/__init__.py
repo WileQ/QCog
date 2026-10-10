@@ -6,7 +6,7 @@ screen-reader text export all read from the same place.  A chart therefore canno
 be published without an accessible alternative.
 """
 
-from .checks import catalogue_checks, figure_checks, standalone_checks
+from .checks import catalogue_checks, figure_checks, standalone_checks, structure_checks
 from .figures import (
     CIRCUIT_STYLES,
     bloch_sphere,
@@ -66,6 +66,7 @@ __all__ = [
     "sweep_figure",
     "text_alternatives",
     "standalone_checks",
+    "structure_checks",
     "catalogue_checks",
     "figure_checks",
 ]

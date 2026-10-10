@@ -23,9 +23,39 @@ from ..core.measurement import Measurement
 from ..core.results import SequentialResult, StepRecord
 from ..core.states import as_state
 
-__all__ = ["AerBackend", "AerExactBackend", "aer_noise_model", "AER_METHODS"]
+__all__ = ["AerBackend", "AerExactBackend", "aer_noise_model", "aer_simulator", "AER_METHODS"]
 
 AER_METHODS = ("automatic", "statevector", "density_matrix", "matrix_product_state", "stabilizer")
+
+#: Set when Aer cannot be loaded at all, so the failure can be reported clearly and only once.
+_AER_IMPORT_ERROR: Exception | None = None
+
+
+def aer_simulator(**options):
+    """Construct an ``AerSimulator``, retrying once and reporting clearly on failure.
+
+    Aer ships compiled extension modules that load on first use. In a long-running process -
+    or while a virus scanner is reading the freshly written files - that load occasionally
+    fails once and then succeeds; a user should not see an obscure import error because of
+    it. One retry covers the transient case, and a genuine failure says what to install.
+    """
+    global _AER_IMPORT_ERROR
+    last: Exception | None = None
+    for attempt in range(2):
+        try:
+            from qiskit_aer import AerSimulator
+
+            return AerSimulator(**options)
+        except Exception as error:  # pragma: no cover - depends on the environment
+            last = error
+            if attempt == 0:
+                time.sleep(0.25)
+    _AER_IMPORT_ERROR = last
+    raise RuntimeError(
+        "Qiskit Aer could not be loaded "
+        f"({type(last).__name__}: {last}). Install it with `pip install qiskit-aer`; the analytic "
+        "backends ('exact' and 'sampled') work without it."
+    ) from last
 
 
 def aer_noise_model(kind: str = "depolarizing", strength: float = 0.02, num_qubits: int = 2):
@@ -91,8 +121,6 @@ class AerBackend:
         than by Kraus operators, use ``aer_noise`` (see :func:`aer_noise_model`)
         when you want device-like errors inside the simulation.
         """
-        from qiskit_aer import AerSimulator
-
         if shots <= 0:
             raise ValueError("shots must be a positive integer")
         confidence = as_state(state)
@@ -104,7 +132,7 @@ class AerBackend:
 
         circuit = self.build_circuit(confidence, questions, mid_circuit_measurement=mid_circuit_measurement)
         choose = method or self.method
-        simulator = AerSimulator(noise_model=aer_noise, method=choose, seed_simulator=seed)
+        simulator = aer_simulator(noise_model=aer_noise, method=choose, seed_simulator=seed)
         # Aer executes gates, not Qiskit-level abstractions such as
         # ``StatePreparation`` or ``UnitaryGate``: transpile against the Aer
         # target so that only native instructions reach the simulator.
@@ -211,7 +239,6 @@ class AerExactBackend:
         **metadata,
     ) -> SequentialResult:
         from qiskit import transpile
-        from qiskit_aer import AerSimulator
 
         from ..circuits.builder import build_prefix_circuits, outcome_populations
 
@@ -224,7 +251,7 @@ class AerExactBackend:
         questions = list(measurements)
         num_qubits = num_qubits_for_dim(confidence.dim)
         circuits = build_prefix_circuits(confidence, questions, measure=False)
-        simulator = AerSimulator(method=self.method)
+        simulator = aer_simulator(method=self.method)
         started = time.perf_counter()
         conditionals: dict[tuple[str, ...], dict[str, float]] = {}
         for prefix, circuit in circuits.items():

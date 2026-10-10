@@ -18,6 +18,8 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
+from .audit import structure_checks
+
 __all__ = ["standalone_checks", "catalogue_checks", "figure_checks", "STANDALONE_FIGURES"]
 
 
@@ -164,5 +166,5 @@ def catalogue_checks(slugs=None, directory: str | Path | None = None, sweeps: bo
 
 
 def figure_checks(directory: str | Path | None = None, slugs=None, sweeps: bool = True) -> list[dict]:
-    """Every check, in one list: the figure functions, then the whole catalogue."""
-    return standalone_checks(directory) + catalogue_checks(slugs, directory, sweeps)
+    """Every check, in one list: the figure functions, the drawings, then the whole catalogue."""
+    return standalone_checks(directory) + structure_checks() + catalogue_checks(slugs, directory, sweeps)

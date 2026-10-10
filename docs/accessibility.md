@@ -90,6 +90,13 @@ for needle in ('lang="en"', 'class="skip"', 'aria-labelledby', '<figcaption>', '
 PY
 ```
 
+Two further checks keep the charts honest. `qcog.viz.structure_checks()` reads each drawing back - bar heights,
+stacked tops, line data, heatmap cells, the Bloch vector, the circuit's own statistics - and compares it with the
+numbers that produced it, so a chart that renders but shows the wrong data fails; `python
+scripts/check_figures.py` runs that audit together with the render checks. And a figure that would mislabel
+itself is drawn differently rather than misleadingly: when two questions have different outcome labels, the
+marginal chart uses one panel per question instead of grouping bars under shared labels.
+
 Automated checks are also part of the test suite (`tests/test_cli_and_report.py::test_model_report_is_accessible`),
 so a regression that removes the skip link, the alt text or the captions fails the build. Two further checks cover
 the charts themselves: `python scripts/check_figures.py` renders every figure function and every model's figures

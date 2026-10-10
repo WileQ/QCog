@@ -149,9 +149,10 @@ a Condorcet-cycle certificate).
 ## 5d. Every visualization, and how it is kept working
 
 The library can draw eleven kinds of chart, and each one is exercised on synthetic input by
-`qcog.viz.standalone_checks()` and, for every model, by `qcog.viz.catalogue_checks()` - the same functions that
-`python scripts/check_figures.py` calls. A chart cannot quietly stop working, and a figure cannot lose its text
-description without failing the test suite.
+`qcog.viz.standalone_checks()`, checked against its own data by `qcog.viz.structure_checks()` - which reads the
+drawing back and compares it with the numbers that produced it - and, for every model, rendered by
+`qcog.viz.catalogue_checks()`. `python scripts/check_figures.py` runs all three passes. A chart cannot quietly
+stop working, show the wrong data, or lose its text description without failing a check.
 
 | Function | What it shows | Where it is used |
 | --- | --- | --- |
@@ -229,7 +230,7 @@ show up as over-dispersion relative to the independent binomial.
 `qcog evidence` prints the table; the same table is embedded in the generated report. The checks are listed in
 the README. Two remarks on method:
 
-* the checks are *executable* rather than textual, so a regression fails the test suite (120 tests) and the
+* the checks are *executable* rather than textual, so a regression fails the test suite (121 tests) and the
   evidence table;
 * the checks deliberately include the classical limits (zero entanglement, zero sharpness, commuting questions,
   full decoherence), because a model that only "works" away from its own limits is usually wrong.

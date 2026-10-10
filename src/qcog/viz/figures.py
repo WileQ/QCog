@@ -65,39 +65,75 @@ def probability_bars(result, title: str | None = None, top: int | None = 10):
 
 
 def marginal_bars(result, title: str | None = None):
-    """Marginal distributions of every question in one simulation."""
+    """Marginal distributions of the questions in one simulation.
+
+    When every question has the *same* outcome labels the bars are grouped side by side,
+    which invites comparison.  As soon as the labels differ - a yes/no question and a
+    three-way choice, say - grouping them would put labels under the wrong bars, so each
+    question gets its own panel instead.  The two cases are drawn differently on purpose:
+    a figure that mislabels its own bars is worse than no figure.
+    """
     frame = result.marginal_frame()
     questions = list(result.order)
-    figure = new_figure(max(5.0, 1.4 * len(questions) + 1.6), 3.2)
-    axis = figure.add_subplot(111)
-    width = 0.8 / max(len(set(frame["question"])), 1)
-    for position, question in enumerate(questions):
-        subset = frame[frame["question"] == question]
-        axis.bar(
-            np.arange(len(subset)) + position * width,
-            subset["probability"],
-            width=width,
-            label=question,
-            color=color_for(position),
-            hatch=(None if position == 0 else "//"),
-            edgecolor="white",
-            linewidth=0.6,
-        )
-    axis.set_xticks(np.arange(len(frame[frame["question"] == questions[0]])) + width)
-    axis.set_xticklabels(list(frame[frame["question"] == questions[0]]["outcome"]), rotation=20, ha="right")
-    axis.set_ylabel("probability")
-    axis.set_ylim(0, 1.05)
-    axis.set_title(title or "Marginal answer distributions")
-    axis.legend()
+    outcome_sets = [tuple(result.outcomes[name]) for name in questions]
+    same_labels = len(set(outcome_sets)) == 1
+    shared = same_labels and len(questions) <= 4
+    reason = (
+        "the questions have different outcome labels"
+        if not same_labels
+        else f"{len(questions)} questions would be unreadable side by side"
+    )
+
+    if shared:
+        labels = list(outcome_sets[0])
+        figure = new_figure(max(5.0, 1.2 * len(questions) + 2.4), 3.2)
+        axis = figure.add_subplot(111)
+        width = 0.8 / len(questions)
+        for position, question in enumerate(questions):
+            subset = frame[frame["question"] == question]
+            axis.bar(
+                np.arange(len(labels)) + position * width,
+                subset["probability"],
+                width=width,
+                label=question,
+                color=color_for(position),
+                hatch=(None if position == 0 else "//"),
+                edgecolor="white",
+                linewidth=0.6,
+            )
+            for index, value in enumerate(subset["probability"]):
+                axis.text(index + position * width, value + 0.02, f"{value:.2f}", ha="center", fontsize=8)
+        axis.set_xticks(np.arange(len(labels)) + width * (len(questions) - 1) / 2)
+        axis.set_xticklabels(labels)
+        axis.set_ylabel("probability")
+        axis.set_ylim(0, 1.08)
+        axis.set_title(title or "Marginal answer distributions")
+        axis.legend()
+    else:
+        figure = new_figure(5.6, max(2.4, 2.1 * len(questions)))
+        for position, question in enumerate(questions):
+            axis = figure.add_subplot(len(questions), 1, position + 1)
+            subset = frame[frame["question"] == question]
+            labels = list(subset["outcome"])
+            values = list(subset["probability"])
+            axis.barh(list(range(len(labels)))[::-1], values, color=color_for(position))
+            for index, value in enumerate(values):
+                axis.text(value + 0.02, len(labels) - 1 - index, f"{value:.2f}", va="center", fontsize=8)
+            axis.set_yticks(list(range(len(labels)))[::-1])
+            axis.set_yticklabels(labels)
+            axis.set_xlim(0, 1.12)
+            axis.set_xlabel("probability")
+            axis.set_title(f"{question}  (outcomes: {', '.join(labels)})", fontsize=10)
     figure.tight_layout()
     annotate_figure(
         figure,
-        "Grouped bar chart of the marginal answer distribution of each question. "
+        ("Grouped bar chart" if shared else f"Panel chart, one panel per question, because {reason}")
+        + " of the marginal answer distribution of each question. "
         + "; ".join(
-            f"{name}: "
-            + ", ".join(f"{outcome} {value:.3f}" for outcome, value in result.marginal(name).items())
+            f"{name}: " + ", ".join(f"{outcome} {value:.3f}" for outcome, value in result.marginal(name).items())
             for name in questions
-        ),
+        )
+        + ".",
     )
     return figure
 
@@ -283,7 +319,15 @@ def bloch_sphere(state, title: str | None = None):
         np.outer(np.ones_like(u), np.cos(v)),
         color="#CCCCCC", linewidth=0.4, alpha=0.6,
     )
-    axis.quiver(0, 0, 0, vector[0], vector[1], vector[2], color=PALETTE["blue"], arrow_length_ratio=0.12)
+    length = float(np.linalg.norm(vector))
+    if length < 1e-6:
+        # a maximally mixed state sits at the centre: an arrow of length zero would simply
+        # be invisible, so mark the point and say what it means
+        axis.scatter([0], [0], [0], color=PALETTE["blue"], s=45, zorder=5)
+        axis.text(0, 0, 0.2, "maximally mixed", ha="center", fontsize=8)
+    else:
+        axis.quiver(0, 0, 0, vector[0], vector[1], vector[2], color=PALETTE["blue"],
+                    arrow_length_ratio=0.12)
     axis.plot([-1, 1], [0, 0], [0, 0], color="#999999", linewidth=0.8)
     axis.plot([0, 0], [-1, 1], [0, 0], color="#999999", linewidth=0.8)
     axis.plot([0, 0], [0, 0], [-1, 1], color="#999999", linewidth=0.8)
@@ -293,31 +337,53 @@ def bloch_sphere(state, title: str | None = None):
     axis.set_box_aspect((1, 1, 1))
     axis.set_title(title or f"Belief state ({state.label})")
     figure.tight_layout()
-    length = float(np.linalg.norm(vector))
     annotate_figure(
         figure,
         f"Bloch sphere with the belief state {state.label}. The Bloch vector points to "
         f"x = {vector[0]:+.2f}, y = {vector[1]:+.2f}, z = {vector[2]:+.2f}, with length {length:.2f}. "
         + (
-            "A length of 1 means a definite (pure) belief; shorter vectors mean the belief is mixed or "
-            "uncertain."
-            if length < 0.999
-            else "The belief is pure."
+            "The vector has length zero, so the state is maximally mixed: no question can tell it apart from a "
+            "fair coin. A length of 1 means a definite (pure) belief; anything in between is partly mixed."
+            if length < 1e-6
+            else (
+                "Length 1 means a definite (pure) belief; shorter vectors are partly mixed, and the distance from "
+                "the centre is the state's purity."
+                if length < 0.999
+                else "The belief is pure: it sits on the surface."
+            )
         ),
     )
     return figure
 
 
-def heatmap_figure(frame, title: str | None = None, row_column: str | None = None):
-    """Heatmap of a tidy table with a numeric value column."""
+def heatmap_figure(
+    frame,
+    title: str | None = None,
+    row_column: str | None = None,
+    column_column: str | None = None,
+    value_column: str | None = None,
+):
+    """Heatmap of a tidy table: one numeric value per (row label, column label) pair.
+
+    The label and value columns can be named explicitly, which is what a caller should do
+    when a table has several numeric columns; otherwise the last numeric column is plotted
+    and the first two text columns become the axes, and the title names the value so the
+    chart cannot be misread.
+    """
     numeric = [column for column in frame.columns if np.issubdtype(frame[column].dtype, np.number)]
     if not numeric:
         raise ValueError("the table has no numeric column to plot")
-    column = numeric[-1]
+    text_columns = [column for column in frame.columns if column not in numeric]
+    column = value_column or numeric[-1]
+    if column not in frame.columns:
+        raise ValueError(f"no column named {column!r} in the table")
     if row_column is None:
-        row_column = frame.columns[0]
+        row_column = text_columns[0] if text_columns else frame.columns[0]
+    if column_column is None:
+        candidates = [name for name in text_columns if name != row_column]
+        column_column = candidates[0] if candidates else frame.columns[1]
     rows = list(dict.fromkeys(frame[row_column]))
-    columns = list(dict.fromkeys(frame[frame.columns[1]]))
+    columns = list(dict.fromkeys(frame[column_column]))
     grid = np.full((len(rows), len(columns)), np.nan)
     for _, entry in frame.iterrows():
         grid[rows.index(entry[row_column]), columns.index(entry[frame.columns[1]])] = entry[column]
@@ -332,13 +398,15 @@ def heatmap_figure(frame, title: str | None = None, row_column: str | None = Non
         for j in range(len(columns)):
             if not np.isnan(grid[i, j]):
                 axis.text(j, i, f"{grid[i, j]:.2f}", ha="center", va="center", color="white", fontsize=8)
-    axis.set_title(title or column.replace("_", " "))
+    axis.set_xlabel(column_column)
+    axis.set_ylabel(row_column)
+    axis.set_title((title or "heatmap") + f"  ({column})")
     figure.colorbar(image, ax=axis, shrink=0.8, label=column)
     axis.grid(False)
     figure.tight_layout()
     annotate_figure(
         figure,
-        f"Heatmap of {column} by {row_column} and {frame.columns[1]}. "
+        f"Heatmap of {column} by {row_column} and {column_column}. "
         + "; ".join(
             f"{rows[i]} vs {columns[j]}: {grid[i, j]:.2f}"
             for i in range(len(rows))

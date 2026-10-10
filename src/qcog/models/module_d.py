@@ -163,7 +163,7 @@ class QuantumOpinionDynamics(PopulationModel):
         )
         analysis = {
             "classical": classical.to_dict(),
-            "trajectory": self.trajectory_analysis(history, label="opinion (Bloch z)"),
+            "trajectory": self.trajectory_analysis(history, label="opinion: p(in favour) - p(against)"),
             "classical_trajectory": classical_trajectory,
             "metrics": metrics,
             "votes": results["votes"],
@@ -376,7 +376,7 @@ class Polarization(PopulationModel):
         )
         analysis = {
             "classical": classical.to_dict(),
-            "trajectory": self.trajectory_analysis(history, label="opinion (Bloch z)"),
+            "trajectory": self.trajectory_analysis(history, label="opinion: p(in favour) - p(against)"),
             "classical_trajectory": {
                 "x": list(range(len(bounded_history))),
                 "xlabel": "interaction step",

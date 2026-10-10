@@ -140,16 +140,33 @@ def proportion_z_test(estimate: float, reference: float, samples: int) -> dict:
     }
 
 
-def agreement_index(distribution: Mapping[tuple, float]) -> float:
-    """Probability of answering both questions the same way.
+def agreement_index(
+    distribution: Mapping[tuple, float],
+    first_outcomes: Sequence[str] | None = None,
+    second_outcomes: Sequence[str] | None = None,
+) -> float:
+    """Probability of answering both questions "the same way".
 
-    Used for the QQ equality: a classical model may produce any value, a quantum
-    model with compatible questions predicts exactly ``1``, and a quantum model
-    with incompatible questions predicts the same value in both orders.
+    Two questions rarely use the same words - "satisfied / dissatisfied" against
+    "would vote / would not vote" - so the pairing is by *order within each question*: the
+    first answer of one with the first answer of the other, and the second with the second.
+    Pass the outcome labels of the two questions to make that explicit; without them the
+    labels themselves are matched, which only works when the questions share their wording.
+
+    Used for the QQ equality: a classical model may produce any value, while a quantum model
+    with incompatible questions predicts the same value in both question orders.
     """
     total = 0.0
     for key, value in distribution.items():
-        if len(key) == 2 and key[0] == key[1]:
+        if len(key) != 2:
+            continue
+        if first_outcomes is not None and second_outcomes is not None:
+            same = (key[0] == first_outcomes[0] and key[1] == second_outcomes[0]) or (
+                key[0] == first_outcomes[1] and key[1] == second_outcomes[1]
+            )
+        else:
+            same = key[0] == key[1]
+        if same:
             total += float(value)
     return float(total)
 

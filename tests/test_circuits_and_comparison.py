@@ -219,6 +219,16 @@ def test_every_model_figure_renders_with_a_description():
     assert total > 100, total
 
 
+def test_every_chart_draws_the_data_it_claims_to():
+    """The structural audit: bar heights, line data, heatmap cells and the Bloch vector."""
+    from qcog.viz import structure_checks
+
+    rows = structure_checks()
+    failures = [row for row in rows if not row["ok"]]
+    assert not failures, failures
+    assert len(rows) >= 12
+
+
 def test_catalogue_figures_include_the_comparison_and_a_circuit_for_every_model():
     from qcog.registry import MODELS
 

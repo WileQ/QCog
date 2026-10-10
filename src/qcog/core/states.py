@@ -157,6 +157,16 @@ class CognitiveState:
         return f"|{index}>"
 
     # -------------------------------------------------------------- operations
+    def with_label(self, label: str) -> "CognitiveState":
+        """A copy of this state carrying a different human-readable label."""
+        return CognitiveState.from_density(
+            self.density,
+            label=label,
+            vector=self.vector,
+            basis_labels=self.basis_labels,
+            **self.metadata,
+        )
+
     def evolve(self, unitary) -> "CognitiveState":
         """Apply a unitary ``U`` (the outer transformation of a context/question)."""
         from ..circuits.gates import as_unitary

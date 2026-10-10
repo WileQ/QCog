@@ -139,7 +139,12 @@ def _delta(conditional: Mapping[str, Mapping[str, float]]) -> float:
 
 @dataclass
 class QQReport:
-    """The QQ equality: same-answer agreement across the two question orders."""
+    """The QQ equality: same-answer agreement across the two question orders.
+
+    "The same way" means the first answer to both questions, or the second answer to both -
+    pairing by position within each question, so the two questions may be worded differently
+    ("satisfied / dissatisfied" and "would vote / would not vote", for instance).
+    """
 
     first: str
     second: str
@@ -185,8 +190,8 @@ class QQReport:
     def summary(self) -> str:
         if not self.applicable:
             return (
-                "QQ equality not applicable: it is defined for two dichotomous questions that share the same "
-                "two answer labels."
+                "QQ equality not applicable: it is defined for two dichotomous questions, and these two do "
+                "not both have exactly two answers."
             )
         verdict = "holds" if self.satisfied else "is violated"
         return (
@@ -240,17 +245,46 @@ def qq_equality(
     """Evaluate the QQ equality between two question orders."""
     first = first or result_first_order.order[0]
     second = second or result_first_order.order[1]
-    left_labels = set(result_first_order.outcomes[first])
-    right_labels = set(result_first_order.outcomes[second])
-    applicable = bool(left_labels & right_labels)
-    left = agreement_index(result_first_order.joint) if applicable else float("nan")
-    right = agreement_index(result_second_order.joint) if applicable else float("nan")
+    first_outcomes = tuple(result_first_order.outcomes[first])
+    second_outcomes = tuple(result_first_order.outcomes[second])
+    # the equality is about two dichotomous questions, paired answer by answer; the two
+    # questions may be worded completely differently
+    applicable = len(first_outcomes) == 2 and len(second_outcomes) == 2
+    left = (
+        _agreement(result_first_order, first, second, first_outcomes, second_outcomes)
+        if applicable
+        else float("nan")
+    )
+    right = (
+        _agreement(result_second_order, first, second, first_outcomes, second_outcomes)
+        if applicable
+        else float("nan")
+    )
     shots = result_first_order.shots
     standard_error = 0.0
     if shots and applicable:
         variance = (left * (1 - left) + right * (1 - right)) / shots
         standard_error = float(np.sqrt(max(variance, 0.0)))
     return QQReport(first, second, float(left), float(right), standard_error, applicable)
+
+
+def _agreement(result, first: str, second: str, first_outcomes: tuple, second_outcomes: tuple) -> float:
+    """Probability of giving the first answer to both questions, or the second to both.
+
+    The two questions are paired answer by answer - the first answer of one with the first
+    answer of the other - and the pairing is looked up *by question name*, so it does not
+    matter in which order the two were asked.  This is what lets the QQ equality be checked
+    for questions that share no wording at all.
+    """
+    first_axis = result.order.index(first)
+    second_axis = result.order.index(second)
+    total = 0.0
+    for key, value in result.joint.items():
+        both_first = key[first_axis] == first_outcomes[0] and key[second_axis] == second_outcomes[0]
+        both_second = key[first_axis] == first_outcomes[1] and key[second_axis] == second_outcomes[1]
+        if both_first or both_second:
+            total += float(value)
+    return float(total)
 
 
 def law_of_total_probability_test(

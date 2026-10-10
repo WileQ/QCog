@@ -87,8 +87,8 @@ def explain_qq(report: QQReport) -> str:
     """One paragraph explaining the QQ equality test."""
     if not getattr(report, "applicable", True):
         return (
-            "The QQ equality is not defined for these two questions because their outcome labels are not "
-            "comparable; it applies to two dichotomous questions with the same two answers."
+            "The QQ equality is not defined for these two questions because at least one of them does not have "
+            "exactly two answers; it applies to two dichotomous questions, paired answer by answer."
         )
     verdict = "consistent with the parameter-free quantum prediction" if report.satisfied else "violated"
     return (

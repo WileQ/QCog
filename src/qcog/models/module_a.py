@@ -98,7 +98,12 @@ class SuperpositionBeliefs(Model):
         coherent = qubit(parameters["belief_angle"], label="coherent belief")
         return {
             "coherent": coherent,
-            "decohered": coherent.apply_channel(depolarizing_channel(parameters["decoherence"], 2).kraus),
+            "decohered": coherent.apply_channel(
+                depolarizing_channel(float(parameters["decoherence"]), 2).kraus
+            ).with_label(
+                "decohered beli"
+                f"ef ({100 * float(parameters['decoherence']):.0f}% depolarised)"
+            ),
             "ignorance": maximally_mixed(2, label="classical ignorance (I/2)"),
             "first": computational("Q1", ("0", "1"), "the question whose answer distribution is 50/50"),
             "probe": measurement_for(parameters["probe_angle"], "Q2", ("yes", "no"),

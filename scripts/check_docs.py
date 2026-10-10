@@ -104,7 +104,8 @@ def main() -> int:
     # 6. the files the docs point at exist
     for relative in (
         "showcase/run_showcase.py", "showcase/output.txt", "showcase/figures", "showcase/reports",
-        "notebooks/quickstart.ipynb", "examples/05_catalogue_report.py", "scripts/check_figures.py",
+        "notebooks/quickstart.ipynb", "examples/05_catalogue_report.py",
+        "examples/06_economy_and_vote.py", "scripts/check_figures.py",
         "scripts/generate_docs.py", "docs/models.generated.md", "docs/project_page.md",
         "docs/methodology.md", "docs/accessibility.md", "docs/limitations.md",
         "docs/demo_video_script.md", "docs/qollab_runbook.md", "docs/submission_checklist.md",

@@ -90,13 +90,19 @@ Every parameter of every model can be set from Python, and every parameter's bou
 once and reused by the CLI, the explorer, the fitting layer and the documentation. `qcog.core.params.ParamSpec`
 describes them; `model.defaults()` prints them; `model.run(**parameters)` applies them. The test suite runs each
 model with every parameter at both of its bounds (or at every choice) and checks that the results stay
-normalised, so "adjustable in Python" is a tested property rather than a claim.
+normalised, so "adjustable in Python" is a tested property rather than a claim. Two further checkers keep the
+artefacts honest: `python scripts/check_figures.py` renders every visualization and verifies that each drawing
+matches the numbers behind it, and `python scripts/check_docs.py` verifies that the documentation still matches
+the code.
 
 ### Guided tours
 
-* **`notebooks/quickstart.ipynb`** - a short, simple notebook: run a model, change a parameter, read the
-  classical comparison, draw the circuit, sample it on a simulator, save a report. Its cells are executed by the
-  test suite, so it always runs.
+* **`notebooks/quickstart.ipynb`** - a short, simple notebook built around one real survey: *"Are you satisfied
+  with the economy?"* and *"Will you vote for the current administration?"*, asked in both orders. It explains
+  the state and the questions, reads the order effect, checks the law of total probability and the parameter-free
+  QQ equality, draws the circuits with the survey questions on the gates, samples them on a simulator and saves a
+  report. Its cells are executed by the test suite, so it always runs.
+* **`examples/06_economy_and_vote.py`** - the same survey as a script, writing the circuit images out.
 * **`showcase/`** - the same ideas as a script, with its captured output, every figure and an HTML report per
   model.
 * **`app/streamlit_app.py`** - the interactive explorer, generated from each model's parameter schema, with
@@ -126,7 +132,7 @@ print(qq_equality(forward, backward, "A", "B").summary())
 Everything needed to reproduce every number in this project is in the repository, and the checks are
 executable:
 
-* `python -m pytest -q` runs 120 tests covering states, questions, channels, backends, analysis, classical
+* `python -m pytest -q` runs 121 tests covering states, questions, channels, backends, analysis, classical
   baselines, fitting, the CLI, the reports, the figures and every model's central claim.
 * `qcog evidence` prints the evidence table: the interference decomposition, the QQ equality, the classical
   limits, the circuit-versus-analytic parity, the game-theory checks, the entanglement calibration, and a run of
