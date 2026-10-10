@@ -97,8 +97,54 @@ def module_block(letter: str, models: list) -> str:
     return "\n".join(lines)
 
 
+#: Files that quote the size of the test suite.
+COUNT_FILES = ("README.md", "CONTRIBUTING.md", "docs/project_page.md", "docs/methodology.md",
+               "docs/qollab_runbook.md", "docs/submission_checklist.md", "docs/accessibility.md",
+               "ATTRIBUTION.md", "showcase/README.md")
+
+
+def count_tests() -> int:
+    """Number of tests the suite collects, without importing it."""
+    import re
+    import subprocess
+
+    completed = subprocess.run(
+        [sys.executable, "-m", "pytest", "--collect-only", "-q"],
+        cwd=str(ROOT), capture_output=True, text=True,
+    )
+    collected = 0
+    for line in completed.stdout.splitlines():
+        text = line.strip()
+        summary = re.match(r"^(tests[/\\][^:]+):\s*(\d+)$", text)
+        if summary:
+            collected += int(summary.group(2))
+        elif "::" in text:
+            collected += 1
+    return collected
+
+
+def sync_test_counts(write: bool = True) -> list[str]:
+    """Make every quoted ``NN tests`` in the documentation match the suite."""
+    import re
+
+    current = count_tests()
+    changed = []
+    for relative in COUNT_FILES:
+        path = ROOT / relative
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        updated = re.sub(r"\b\d{2,3}(?=-? tests)", str(current), text)
+        updated = re.sub(r"\b\d{2,3}(?=-test)", str(current), updated)
+        if updated != text:
+            if write:
+                path.write_text(updated, encoding="utf-8", newline="\n")
+            changed.append(relative)
+    return changed
+
+
 def main() -> int:
-    """Write ``docs/models.generated.md`` and print a summary."""
+    """Write ``docs/models.generated.md``, and align the quoted test counts."""
     parts = [HEADER]
     parts.append(f"**{len(MODELS)} models in {len(MODULES)} modules.**\n")
     for letter, models in models_by_module().items():
@@ -111,6 +157,11 @@ def main() -> int:
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text("\n".join(parts), encoding="utf-8")
     print(f"written {target} ({target.stat().st_size / 1024:.1f} KB, {len(MODELS)} models)")
+    if "--no-sync" not in sys.argv:
+        changed = sync_test_counts()
+        print(
+            f"test count synced to {count_tests()} in: {', '.join(changed) if changed else 'nothing to change'}"
+        )
     return 0
 
 

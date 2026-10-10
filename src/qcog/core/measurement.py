@@ -57,6 +57,8 @@ __all__ = [
     "depolarized_question",
     "incompatibility",
     "measurements_commute",
+    "local_question",
+    "local_unsharp_question",
 ]
 
 _CACHE: dict[tuple, tuple[np.ndarray, list[tuple[int, int, int]]]] = {}
@@ -584,6 +586,58 @@ def depolarized_question(
         tuple(effects),
         f"{measurement.description} (visibility={visibility:.2f})".strip(),
         {"visibility": float(visibility), "source": "depolarized"},
+    )
+
+
+def local_question(
+    theta: float,
+    qubit: int,
+    num_qubits: int,
+    name: str,
+    outcomes: Sequence[str] = ("yes", "no"),
+    phi: float = 0.0,
+    description: str = "",
+) -> ProjectiveMeasurement:
+    """A single-qubit question embedded in a larger register.
+
+    Qubits are little-endian (matching Qiskit), so the operator for the least significant
+    qubit is the rightmost Kronecker factor.  A question about one subsystem must leave the
+    others alone, which is what the embedding guarantees - and what :func:`trivial_qubits`
+    looks for when deciding which qubits a circuit has to measure.
+    """
+    from .linalg import embed_matrix  # local import: keeps the module import graph shallow
+
+    base = question(theta, phi, name, outcomes, description)
+    projectors = []
+    for projector in base.projectors:
+        left = np.eye(2 ** (num_qubits - qubit - 1), dtype=complex)
+        right = np.eye(2**qubit, dtype=complex)
+        projectors.append(np.kron(np.kron(left, projector), right))
+    return ProjectiveMeasurement(
+        name, tuple(outcomes), tuple(projectors), description,
+        {"source": "local", "qubit": int(qubit), "theta": float(theta)},
+    )
+
+
+def local_unsharp_question(
+    theta: float,
+    qubit: int,
+    num_qubits: int,
+    sharpness: float,
+    name: str,
+    outcomes: Sequence[str] = ("yes", "no"),
+    description: str = "",
+) -> POVM:
+    """An unsharp single-qubit question embedded in a larger register."""
+    base = unsharp_question(theta, sharpness, 0.0, name, outcomes, description)
+    effects = []
+    for effect in base.effects:
+        left = np.eye(2 ** (num_qubits - qubit - 1), dtype=complex)
+        right = np.eye(2**qubit, dtype=complex)
+        effects.append(np.kron(np.kron(left, effect), right))
+    return POVM(
+        name, tuple(outcomes), tuple(effects), description,
+        {"source": "local-unsharp", "qubit": int(qubit), "sharpness": float(sharpness)},
     )
 
 

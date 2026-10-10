@@ -8,7 +8,14 @@ experiment.
 
 from __future__ import annotations
 
-from .aer import AER_METHODS, AerBackend, AerExactBackend, aer_noise_model, aer_simulator
+from .aer import (
+    AER_METHODS,
+    AerBackend,
+    AerExactBackend,
+    aer_noise_model,
+    aer_simulator,
+    purge_modules,
+)
 from .exact import ExactBackend, SampledBackend
 from .ionq import IonQBackend, ionq_available
 
@@ -18,6 +25,7 @@ __all__ = [
     "AerExactBackend",
     "aer_noise_model",
     "aer_simulator",
+    "purge_modules",
     "ExactBackend",
     "SampledBackend",
     "IonQBackend",

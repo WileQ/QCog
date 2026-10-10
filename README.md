@@ -261,7 +261,7 @@ failure is visible rather than silent. The checks include:
 Two execution paths are implemented from *one* definition - projectors - and compared: the analytic engine
 (Qiskit `Statevector`/`DensityMatrix`) and compiled circuits on `qiskit-aer`. Agreement between them is what
 makes the compilation, the collapse semantics and the frame bookkeeping trustworthy. The test suite
-(121 tests) additionally covers states, measurements, channels, backends, analysis, baselines, fitting, the CLI,
+(128 tests) additionally covers states, measurements, channels, backends, analysis, baselines, fitting, the CLI,
 the reports, every visualization and every model's central claims; `python scripts/check_figures.py` renders every
 chart the library can draw - 11 figure functions and every model's figure set - and fails if one is broken or has
 lost its text description.
@@ -324,8 +324,9 @@ app/             Streamlit explorer
 examples/        six runnable scripts, from five minutes to the full catalogue
 notebooks/       quickstart.ipynb - a short, simple notebook tour
 showcase/        a top-level demo: script + captured output + figures + HTML reports
+studies/         a study of five cases where the quantum account beats the classical one
 scripts/         documentation and figure generators, plus the two checkers
-tests/           121 tests
+tests/           128 tests
 docs/            project page, methodology, accessibility, demo script, submission notes
 ```
 
@@ -339,6 +340,9 @@ docs/            project page, methodology, accessibility, demo script, submissi
   circuit written out as an image.
 * [`showcase/`](showcase/) - runnable demonstration with its captured output, figures and HTML reports
   (`python showcase/run_showcase.py`, or `--all` for the whole catalogue).
+* [`studies/quantum_advantage/`](studies/quantum_advantage/) - five measured cases where the quantum account
+  does better than the classical one, each labelled with the sense of "better" it uses, with its report,
+  `results.json` and one graph per case. Two of the five include a classical model that is *not* rejected.
 * [`scripts/check_figures.py`](scripts/check_figures.py) - renders every visualization and reports;
   [`scripts/check_docs.py`](scripts/check_docs.py) - verifies that the documentation matches the code.
 * [`docs/project_page.md`](docs/project_page.md) - the project page: what it does, what problem it explores,

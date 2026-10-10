@@ -27,6 +27,18 @@ def _rows(**kwargs) -> dict:
     return {"name": kwargs["name"], "ok": bool(kwargs["ok"]), "detail": kwargs.get("detail", "")}
 
 
+def has_drawn_marks(figure) -> bool:
+    """True when a figure actually contains something drawn.
+
+    The library's rule is that an image is a graph or there is no image: a panel of text, or an
+    empty frame, is not a visualization.  This is the check behind that rule.
+    """
+    for axis in getattr(figure, "axes", []):
+        if axis.patches or axis.lines or axis.collections or axis.images:
+            return True
+    return False
+
+
 def standalone_figures() -> dict:
     """One figure per visualization function, built from library objects.
 
@@ -105,8 +117,14 @@ def standalone_checks(directory: str | Path | None = None) -> list[dict]:
         try:
             figure = builder()
             description = getattr(figure, "_qcog_description", "")
-            ok = len(description) >= 20
-            detail = f"description {len(description)} characters" if ok else "no accessible description"
+            described = len(description) >= 20
+            drawn = has_drawn_marks(figure)
+            ok = described and drawn
+            detail = (
+                f"description {len(description)} characters"
+                if ok
+                else ("no accessible description" if not described else "the figure contains no drawn marks")
+            )
             if ok and directory is not None:
                 path = Path(directory)
                 path.mkdir(parents=True, exist_ok=True)
@@ -138,8 +156,15 @@ def catalogue_checks(slugs=None, directory: str | Path | None = None, sweeps: bo
                 name: len(getattr(figure, "_qcog_description", "")) for name, figure in figures.items()
             }
             missing = [name for name, length in descriptions.items() if length < 20]
-            if missing:
-                rows.append(_rows(name=slug, ok=False, detail=f"figures without a description: {missing}"))
+            empty = [name for name, figure in figures.items() if not has_drawn_marks(figure)]
+            if missing or empty:
+                rows.append(
+                    _rows(
+                        name=slug,
+                        ok=False,
+                        detail=f"undescribed figures: {missing}; figures with nothing drawn: {empty}",
+                    )
+                )
                 continue
             written = 0
             if directory is not None:

@@ -12,6 +12,7 @@ Two things make this backend more than a re-implementation:
 
 from __future__ import annotations
 
+import sys
 import time
 from typing import Mapping, Sequence
 
@@ -23,7 +24,14 @@ from ..core.measurement import Measurement
 from ..core.results import SequentialResult, StepRecord
 from ..core.states import as_state
 
-__all__ = ["AerBackend", "AerExactBackend", "aer_noise_model", "aer_simulator", "AER_METHODS"]
+__all__ = [
+    "AerBackend",
+    "AerExactBackend",
+    "aer_noise_model",
+    "aer_simulator",
+    "purge_modules",
+    "AER_METHODS",
+]
 
 AER_METHODS = ("automatic", "statevector", "density_matrix", "matrix_product_state", "stabilizer")
 
@@ -31,39 +39,12 @@ AER_METHODS = ("automatic", "statevector", "density_matrix", "matrix_product_sta
 _AER_IMPORT_ERROR: Exception | None = None
 
 
-def aer_simulator(**options):
-    """Construct an ``AerSimulator``, retrying once and reporting clearly on failure.
-
-    Aer ships compiled extension modules that load on first use. In a long-running process -
-    or while a virus scanner is reading the freshly written files - that load occasionally
-    fails once and then succeeds; a user should not see an obscure import error because of
-    it. One retry covers the transient case, and a genuine failure says what to install.
-    """
-    global _AER_IMPORT_ERROR
-    last: Exception | None = None
-    for attempt in range(2):
-        try:
-            from qiskit_aer import AerSimulator
-
-            return AerSimulator(**options)
-        except Exception as error:  # pragma: no cover - depends on the environment
-            last = error
-            if attempt == 0:
-                time.sleep(0.25)
-    _AER_IMPORT_ERROR = last
-    raise RuntimeError(
-        "Qiskit Aer could not be loaded "
-        f"({type(last).__name__}: {last}). Install it with `pip install qiskit-aer`; the analytic "
-        "backends ('exact' and 'sampled') work without it."
-    ) from last
-
-
 def aer_noise_model(kind: str = "depolarizing", strength: float = 0.02, num_qubits: int = 2):
     """Build a Qiskit Aer ``NoiseModel`` for one of the standard noise processes.
 
-    This complements the Kraus-based decoherence in :mod:`qcog.core.instruments`:
-    the Kraus path is exact and deterministic, the Aer noise model path samples
-    device-like errors inside the simulator.
+    This complements the Kraus-based decoherence in :mod:`qcog.core.instruments`: the Kraus
+    path is exact and deterministic, while the Aer noise model samples device-like errors
+    inside the simulator.
     """
     from qiskit_aer.noise import NoiseModel as AerNoiseModel
     from qiskit_aer.noise import depolarizing_error
@@ -79,6 +60,54 @@ def aer_noise_model(kind: str = "depolarizing", strength: float = 0.02, num_qubi
     else:  # pragma: no cover - defensive
         raise ValueError(f"unknown Aer noise kind {kind!r}; expected 'depolarizing' or 'readout'")
     return model
+
+
+def purge_modules(prefix: str) -> list[str]:
+    """Remove a partially imported package and its submodules from ``sys.modules``.
+
+    A module whose import dies part-way leaves a broken entry behind, and every later
+    ``import`` of it then fails for a reason that has nothing to do with the current call.
+    Clearing it makes the retry a genuine fresh import.  Returned for tests and diagnostics.
+    """
+    removed = [name for name in list(sys.modules) if name == prefix or name.startswith(prefix + ".")]
+    for name in removed:
+        del sys.modules[name]
+    return removed
+
+
+def aer_simulator(**options):
+    """Construct an ``AerSimulator``, recovering from a partial import and reporting clearly.
+
+    Aer ships compiled extension modules that load on first use. Two failures happen in
+    practice and both are recoverable:
+
+    * a transient failure (a scanner reading the freshly written files, a momentary
+      resource shortage) that succeeds on a retry;
+    * an import that dies *part-way*, which leaves a half-initialised ``qiskit_aer`` in
+      ``sys.modules``; every later ``import`` then re-uses that broken entry and keeps
+      failing.  Purging the package's modules before retrying is what fixes that one.
+
+    If the load genuinely cannot succeed, the error says what to install. The analytic
+    backends (``exact`` and ``sampled``) work without Aer.
+    """
+    global _AER_IMPORT_ERROR
+    last: Exception | None = None
+    for attempt in range(3):
+        try:
+            from qiskit_aer import AerSimulator
+
+            return AerSimulator(**options)
+        except Exception as error:  # pragma: no cover - depends on the environment
+            last = error
+            purge_modules("qiskit_aer")
+            if attempt < 2:
+                time.sleep(0.3 * (attempt + 1))
+    _AER_IMPORT_ERROR = last
+    raise RuntimeError(
+        "Qiskit Aer could not be loaded "
+        f"({type(last).__name__}: {last}). Install it with `pip install qiskit-aer`; the analytic "
+        "backends ('exact' and 'sampled') work without it."
+    ) from last
 
 
 class AerBackend:

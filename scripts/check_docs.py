@@ -80,7 +80,12 @@ def main() -> int:
     quoted = re.findall(r"(\d{2,3}) tests", readme + project_page + methodology)
     if quoted:
         stale = sorted({value for value in quoted if int(value) != tests})
-        check("quoted test counts are current", not stale, f"docs say {sorted(set(quoted))}, suite has {tests}")
+        check(
+            "quoted test counts are current",
+            not stale,
+            f"docs say {sorted(set(quoted))}, suite has {tests}"
+            + (" - run `python scripts/generate_docs.py` to align them" if stale else ""),
+        )
     else:
         check("test count is not quoted (nothing to drift)", True, f"suite has {tests} tests")
 
@@ -106,6 +111,8 @@ def main() -> int:
         "showcase/run_showcase.py", "showcase/output.txt", "showcase/figures", "showcase/reports",
         "notebooks/quickstart.ipynb", "examples/05_catalogue_report.py",
         "examples/06_economy_and_vote.py", "scripts/check_figures.py",
+        "studies/quantum_advantage/run_study.py", "studies/quantum_advantage/REPORT.md",
+        "studies/quantum_advantage/results.json", "studies/quantum_advantage/README.md",
         "scripts/generate_docs.py", "docs/models.generated.md", "docs/project_page.md",
         "docs/methodology.md", "docs/accessibility.md", "docs/limitations.md",
         "docs/demo_video_script.md", "docs/qollab_runbook.md", "docs/submission_checklist.md",
@@ -113,9 +120,33 @@ def main() -> int:
     ):
         check(f"{relative} exists", (ROOT / relative).exists())
 
+    # 6b. the comparative study and its report agree with each other
+    import json
+
+    study_results = ROOT / "studies" / "quantum_advantage" / "results.json"
+    study_report = ROOT / "studies" / "quantum_advantage" / "REPORT.md"
+    if study_results.exists() and study_report.exists():
+        payload = json.loads(study_results.read_text(encoding="utf-8"))
+        report = study_report.read_text(encoding="utf-8")
+        slugs = [case["slug"] for case in payload["cases"]]
+        check("the study report covers every result", all(slug in report for slug in slugs), f"{len(slugs)} cases")
+        check(
+            "every study case names its sense and its limits",
+            all(case.get("sense") and case.get("not_shown") for case in payload["cases"]),
+            "S1/S2/S3 labels and a 'what it does not show' line per case",
+        )
+        figures = sorted((ROOT / "studies" / "quantum_advantage" / "figures").glob("*.png"))
+        check(
+            "the study report embeds one graph per case",
+            len(figures) == len(slugs) and all(f"figures/{figure.name}" in report for figure in figures),
+            f"{len(figures)} figures",
+        )
+
     # 7. the notebook and the showcase are referenced where a reader looks
     check("README points at the notebook", "quickstart.ipynb" in readme or "notebooks/" in readme)
     check("README points at the showcase", "showcase/" in readme)
+    check("README points at the comparative study", "studies/quantum_advantage" in readme)
+    check("project page points at the comparative study", "studies/quantum_advantage" in project_page)
     check("project page points at the showcase", "showcase" in project_page)
     check("project page points at the notebook", "notebook" in project_page.lower())
     check("contributing explains the visualization check", "check_figures.py" in contributing)

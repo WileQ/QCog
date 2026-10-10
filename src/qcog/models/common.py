@@ -128,53 +128,22 @@ def classical_sentence(bundle) -> str:
         "which is a statement about the model, not yet about people."
     )
 
-def local_question(
-    theta: float,
-    qubit: int,
-    num_qubits: int,
-    name: str,
-    outcomes: Sequence[str] = ("yes", "no"),
-    phi: float = 0.0,
-    description: str = "",
-):
+def local_question(*args, **kwargs):
     """A single-qubit question embedded in a larger register.
 
-    Qubits are little-endian (matching Qiskit), so the operator for the least
-    significant qubit is the rightmost Kronecker factor.
+    Kept here as a re-export of :func:`qcog.core.measurement.local_question` so that models
+    and examples can import it from either place.
     """
-    from ..core.measurement import ProjectiveMeasurement
-    from ..core.measurement import question as _question
+    from ..core.measurement import local_question as builder
 
-    base = _question(theta, phi, name, outcomes, description)
-    projectors = []
-    for projector in base.projectors:
-        left = np.eye(2 ** (num_qubits - qubit - 1), dtype=complex)
-        right = np.eye(2**qubit, dtype=complex)
-        projectors.append(np.kron(np.kron(left, projector), right))
-    return ProjectiveMeasurement(name, outcomes, tuple(projectors), description,
-                                 {"source": "local", "qubit": qubit, "theta": float(theta)})
+    return builder(*args, **kwargs)
 
 
-def local_unsharp_question(
-    theta: float,
-    qubit: int,
-    num_qubits: int,
-    sharpness: float,
-    name: str,
-    outcomes: Sequence[str] = ("yes", "no"),
-    description: str = "",
-):
-    """An unsharp single-qubit question embedded in a larger register."""
-    from ..core.measurement import POVM, unsharp_question
+def local_unsharp_question(*args, **kwargs):
+    """An unsharp single-qubit question embedded in a larger register (re-export)."""
+    from ..core.measurement import local_unsharp_question as builder
 
-    base = unsharp_question(theta, sharpness, 0.0, name, outcomes, description)
-    effects = []
-    for effect in base.effects:
-        left = np.eye(2 ** (num_qubits - qubit - 1), dtype=complex)
-        right = np.eye(2**qubit, dtype=complex)
-        effects.append(np.kron(np.kron(left, effect), right))
-    return POVM(name, outcomes, tuple(effects), description,
-                {"source": "local-unsharp", "qubit": qubit, "sharpness": float(sharpness)})
+    return builder(*args, **kwargs)
 
 
 def joint_ray_question(name: str, rays: Sequence[np.ndarray], outcomes: Sequence[str], description: str = ""):

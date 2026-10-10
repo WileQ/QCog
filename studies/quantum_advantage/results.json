@@ -1,0 +1,228 @@
+{
+  "seed": 20261011,
+  "cases": [
+    {
+      "title": "Question order: the classical model cannot hold both orders",
+      "phenomenon": "Two survey questions - satisfaction with the economy and voting intention - asked in both orders.",
+      "sense": "S1 imposed impossibility (and S3: it predicts the held-out order too)",
+      "data": "4000 simulated respondents, half in each order (seed fixed)",
+      "models": "quantum: the question-order model (state angle, two question angles); classical: one joint distribution (two marginals), the only classical option",
+      "metrics": [
+        {
+          "metric": "prediction error on the order it was not fitted to",
+          "quantum": 0.11561919422637518,
+          "classical": 0.36409026671317674,
+          "favours": "quantum",
+          "direction": "lower"
+        },
+        {
+          "metric": "law-of-total-probability violation",
+          "quantum": 0.10137375000000001,
+          "classical": 0.0,
+          "favours": "quantum",
+          "direction": "higher"
+        },
+        {
+          "metric": "reversed-order quantities predicted within 0.05",
+          "quantum": 1.0,
+          "classical": 0.0,
+          "favours": "quantum",
+          "plot": false,
+          "direction": "higher"
+        }
+      ],
+      "evidence": [
+        "The observed data satisfy the QQ equality - same-answer agreement 0.875 in one order and 0.873 in the other (difference +0.002) - which is a parameter-free prediction of the quantum account.",
+        "A classical model answers both questions from one joint distribution, which forces the marginal of the first question to be identical in both orders. The data differ by 0.101 (computed exactly from the generating model: 0.145, so the sampled estimate is within sampling error), and that family is excluded - not out-fitted, excluded.",
+        "The quantum model, fitted on one order only, predicts the other order to 0.1156; the classical model's error there is 0.3641.",
+        "Held-out error over 3 of 4 reversed-order quantities; 1 of them is undefined at the fitted parameters, which the study excludes and reports rather than hiding.",
+        "Fitting the quantum model needed 3 parameters and encountered 0 parameter values at which a conditional probability is undefined (the fitter penalises those and stays in the identifiable region).",
+        "the quantum model is favoured (lower AIC)"
+      ],
+      "not_shown": "A classical model *with different joints for the two orders* is not excluded by these numbers; it is a different model, needs more parameters, and has no reason to satisfy the QQ equality that this one does.",
+      "figure_title": "Question order: held-out prediction error and the classical identity that fails",
+      "slug": "question-order",
+      "figure": "figures/question-order.png"
+    },
+    {
+      "title": "Conjunction fallacy: the classical bound is violated, not merely missed",
+      "phenomenon": "The probability that Linda is 'a bank teller and a feminist' exceeds the probability that she is 'a bank teller'.",
+      "sense": "S1 imposed impossibility",
+      "data": "1500 simulated respondents (seed fixed)",
+      "models": "quantum: one belief state with a relative phase; classical: any probability space, in which p(A and B) can never exceed min(p(A), p(B))",
+      "metrics": [
+        {
+          "metric": "p(A and B) above the classical bound",
+          "quantum": 0.12466666666666668,
+          "classical": 0.0,
+          "favours": "quantum",
+          "direction": "higher"
+        },
+        {
+          "metric": "residual of the best possible classical model",
+          "quantum": 0.0,
+          "classical": 0.12466666666666668,
+          "favours": "quantum",
+          "direction": "lower"
+        }
+      ],
+      "evidence": [
+        "Observed: p(feminist) = 0.473, p(bank teller) = 0.201, conjunction = 0.326. The classical bound is 0.201, so the conjunction exceeds it by +0.125.",
+        "A classical model is free in the two marginals but cannot produce a conjunction above their minimum, so its residual on these data is at least 0.125.",
+        "The quantum model fits with 1 parameters (RMSE 0.2360); the same model with independent attributes satisfies the bound exactly, which shows the effect comes from incompatible questions rather than from uncertainty."
+      ],
+      "not_shown": "The violation requires the two questions to be incompatible; with independent attributes the classical bound holds exactly, and the model demonstrates that itself.",
+      "figure_title": "Conjunction fallacy: excess over the bound the classical account cannot pass",
+      "slug": "conjunction-fallacy",
+      "figure": "figures/conjunction-fallacy.png"
+    },
+    {
+      "title": "Disjunction effect: a decision that depends on an unresolved alternative",
+      "phenomenon": "Cooperation with an unknown opponent differs from the average of the two known cases - the disjunction effect.",
+      "sense": "S1 imposed impossibility, verified numerically",
+      "data": "the model's own design, plus 200 random two-qubit states as the classical-structured control",
+      "models": "quantum: one decision state with the two branches contributing coherent amplitudes; classical: the sure-thing principle, which any 'world x action' state satisfies exactly",
+      "metrics": [
+        {
+          "metric": "sure-thing violation",
+          "quantum": 0.28783151775108495,
+          "classical": 0.0,
+          "favours": "quantum",
+          "direction": "higher"
+        },
+        {
+          "metric": "sure-thing violation: the design against the best factorised state",
+          "quantum": 0.28783151775108495,
+          "classical": 1.1102230246251565e-16,
+          "favours": "quantum",
+          "direction": "higher"
+        }
+      ],
+      "evidence": [
+        "Cooperation when the opponent is unknown is 0.988; the sure-thing prediction (the branch mixture) is 0.700, a violation of +0.288.",
+        "Two hundred random two-qubit states - product and entangled, including maximally entangled ones - produce a largest violation of 1.11e-16. The effect is not a matter of choosing a better entangled state; it requires a representation in which the two branches add to the *same* decision state.",
+        "That is a statement about representations, and it is checked here rather than asserted."
+      ],
+      "not_shown": "This says the effect needs a non-reducible representation, not that people use one.",
+      "figure_title": "Disjunction effect: violation in the coherent design, and none in any bipartite state",
+      "slug": "disjunction-effect",
+      "figure": "figures/disjunction-effect.png"
+    },
+    {
+      "title": "Correlated crowds: the independent-jury model is rejected by the variance alone",
+      "phenomenon": "4000 groups of 7 judges, each judge right with probability 0.7, and a shared state - a group in which the judges are correlated.",
+      "sense": "S2 parameter-free prediction (and S3 against the independent model)",
+      "data": "4000 simulated groups (seed fixed)",
+      "models": "quantum: a GHZ-style correlated state (accuracy and correlation); classical 1: independent judges (accuracy); classical 2: a beta-binomial, the classical model of over-dispersion (two parameters)",
+      "metrics": [
+        {
+          "metric": "observed vote-count variance",
+          "quantum": 5.91894375,
+          "classical": 1.4828491071428573,
+          "favours": "quantum",
+          "direction": "higher"
+        },
+        {
+          "metric": "log-likelihood relative to the best fit",
+          "quantum": 0.0,
+          "classical": -5093.749321444044,
+          "favours": "quantum",
+          "direction": "higher"
+        }
+      ],
+      "evidence": [
+        "The count distribution has mean 4.87 and variance 5.92; the independent model with the same mean is forced to a variance of 1.48.",
+        "A chi-square test of the counts against that independent model: statistic 393828.2 with 7 degrees of freedom, p = 0.00e+00 - rejected, and the only thing that rejects it is a single number the quantum parameter controls.",
+        "Fitted likelihoods: independent -11780.0, quantum -6686.2 (accuracy 0.70, correlation 0.50), beta-binomial -7272.9 (mean 0.65, concentration 0.89).",
+        "The analytic count distribution the study fits is the one the model itself produces (largest difference 1.11e-16)."
+      ],
+      "not_shown": "The beta-binomial matches the counts as well as the quantum model does - the classical account can be patched with an ad-hoc over-dispersion parameter, and this study says so. What it cannot do is tie that parameter to anything else: the quantum state yields the over-dispersion and the question-order effects of the same respondents, while a count model says nothing about the order in which the questions were asked.",
+      "figure_title": "Correlated crowd: the count distribution, the independent model and the quantum fit",
+      "figure_kind": "histogram",
+      "figure_spec": {
+        "x": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "xlabel": "judges voting in favour",
+        "ylabel": "probability",
+        "series": {
+          "observed groups": [
+            0.154,
+            0.0015,
+            0.0135,
+            0.0465,
+            0.1095,
+            0.168,
+            0.1275,
+            0.3795
+          ],
+          "independent judges": [
+            0.00024352132538303626,
+            0.0038909169327613134,
+            0.02664343001671609,
+            0.10135747995808168,
+            0.23135171568392143,
+            0.31684064977955084,
+            0.24106633259897822,
+            0.07860595370460735
+          ],
+          "quantum fit (accuracy 0.70, correlation 0.50)": [
+            0.15010935000000003,
+            0.0017860500000000015,
+            0.012502350000000008,
+            0.04862025000000002,
+            0.11344725000000003,
+            0.15882615,
+            0.12353144999999997,
+            0.39117715
+          ]
+        }
+      },
+      "uncertainty": {
+        "statistic": 393828.1897040619,
+        "dof": 7,
+        "p_value": 0.0
+      },
+      "slug": "correlated-crowd",
+      "figure": "figures/correlated-crowd.png"
+    },
+    {
+      "title": "Superposition versus ignorance: identical marginals, different states",
+      "phenomenon": "A respondent who answers 'fifty-fifty' to one question may hold an unresolved superposition or an already settled but unknown answer.",
+      "sense": "S2 parameter-free prediction",
+      "data": "no fitting: the two states are stated, and the model predicts both questions",
+      "models": "quantum: a coherent state and an equal mixture as two distinct states; classical: one distribution over the first question, which is all a classical account has",
+      "metrics": [
+        {
+          "metric": "prediction error on the second question",
+          "quantum": 0.0,
+          "classical": 0.4999999999999999,
+          "favours": "quantum",
+          "direction": "lower"
+        },
+        {
+          "metric": "difference between the two states on the first question",
+          "quantum": 1.1102230246251565e-16,
+          "classical": 0.0,
+          "favours": "tie",
+          "direction": "lower"
+        }
+      ],
+      "evidence": [
+        "Both states answer the first question with the same distribution (largest difference 1.1e-16), so no classical account can tell them apart: it knows a distribution, not a state.",
+        "The second question separates them: p(yes) is 1.000 for the coherent state and 0.500 for the mixture. A classical account that has only the first distribution is wrong about the coherent case by 0.500, with no parameter to adjust."
+      ],
+      "not_shown": "With a single qubit, one sharp question erases exactly the coherence a different sharp question would have revealed; the separation needs two *different* questions.",
+      "figure_title": "Superposition versus ignorance: the error a distribution-only account makes",
+      "slug": "superposition-vs-ignorance",
+      "figure": "figures/superposition-vs-ignorance.png"
+    }
+  ]
+}

@@ -48,6 +48,7 @@ class FitResult:
     weights: list[float] = field(default_factory=list)
     counts: dict[str, float] | None = None
     backend: str = "least_squares"
+    undefined_values: int = 0
 
     @property
     def residuals(self) -> np.ndarray:
@@ -122,6 +123,7 @@ class FitResult:
             "success": bool(self.success),
             "message": self.message,
             "backend": self.backend,
+            "undefined_values": int(self.undefined_values),
             "observed": {key: round(value, 8) for key, value in self.observed.items()},
             "predicted": {key: round(value, 8) for key, value in self.predicted.items()},
         }
@@ -160,7 +162,11 @@ def fit(
     observed:
         Observed probability for each response key.  Pass ``counts`` as well when
         the data are raw counts: that switches on the multinomial likelihood,
-        the chi-square style weighting and AIC/BIC.
+        the chi-square style weighting and AIC/BIC.  Keys the model does not predict are
+        treated as zero; quantities that are *undefined* for some parameter values (a
+        conditional whose conditioning event has probability zero) are penalised rather than
+        evaluated, and counted on the result, so the search stays inside the identifiable
+        region instead of failing on a NaN.
     specs:
         The model's parameter specifications; only ``fittable=True`` numeric
         parameters are varied, the rest stay at their declared defaults.
@@ -181,13 +187,26 @@ def fit(
     else:
         sigma = np.ones(len(keys), dtype=float)
 
+    #: Penalty used when a parameter value makes a prediction undefined.  Some quantities
+    #: genuinely have no value for some parameters - a conditional probability whose
+    #: conditioning event has probability zero, for instance - and a fitter must not be handed
+    #: a NaN (SciPy cannot even start).  Such candidates are given a large finite residual, so
+    #: the search simply avoids that region, and the count is reported on the result.
+    undefined_penalty = 1e3
+    undefined_counter = {"count": 0}
+
     def residuals(vector: np.ndarray) -> np.ndarray:
         parameters = dict(defaults)
         for spec, value in zip(variable, vector):
             parameters[spec.name] = spec.coerce(float(value))
         predicted = predict(parameters)
         difference = np.array([float(predicted.get(key, 0.0)) - target[index] for index, key in enumerate(keys)])
-        return difference / sigma
+        scaled = difference / sigma
+        undefined = ~np.isfinite(scaled)
+        if undefined.any():
+            undefined_counter["count"] += int(undefined.sum())
+            scaled = np.where(undefined, undefined_penalty, scaled)
+        return scaled
 
     if variable:
         initial = np.array([float(spec.coerce(defaults[spec.name])) for spec in variable], dtype=float)
@@ -205,6 +224,11 @@ def fit(
         success = bool(solution.success)
         message = str(solution.message)
         iterations = int(solution.nfev)
+        if undefined_counter["count"]:
+            message += (
+                f"; {undefined_counter['count']} parameter values made a prediction undefined "
+                "(penalised rather than evaluated)"
+            )
     else:
         fitted = dict(defaults)
         cost = float(np.sum(residuals(np.array([])) ** 2))
@@ -226,6 +250,7 @@ def fit(
         weights=[float(value) for value in sigma],
         counts={key: float(value) for key, value in counts.items()} if counts is not None else None,
         backend="least_squares",
+        undefined_values=int(undefined_counter["count"]),
     )
 
 

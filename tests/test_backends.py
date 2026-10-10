@@ -16,6 +16,33 @@ def design():
     return state, [first, second]
 
 
+def test_purge_modules_clears_a_partial_import():
+    """A half-initialised package must be droppable, so a retry re-imports it cleanly.
+
+    The test uses a throwaway package name: mutating ``sys.modules`` for a real dependency
+    would leak into every other test in the process, which is exactly the failure mode being
+    guarded against.
+    """
+    import sys
+    import types
+
+    from qcog.backends import purge_modules
+
+    prefix = "qcog_test_partial_package"
+    sys.modules[f"{prefix}.sub"] = types.ModuleType(f"{prefix}.sub")
+    sys.modules[prefix] = types.ModuleType(prefix)
+    try:
+        removed = purge_modules(prefix)
+        assert sorted(removed) == [prefix, f"{prefix}.sub"]
+        assert prefix not in sys.modules and f"{prefix}.sub" not in sys.modules
+        from qcog.backends import aer as aer_module
+
+        assert "purge_modules" in aer_module.__all__
+    finally:
+        sys.modules.pop(prefix, None)
+        sys.modules.pop(f"{prefix}.sub", None)
+
+
 def test_backend_registry():
     assert "exact" in list_backends()
     assert isinstance(get_backend("aer[statevector]"), AerBackend)

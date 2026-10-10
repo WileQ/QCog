@@ -128,6 +128,20 @@ def test_models_can_override_the_comparison(runs):
 
 
 # ------------------------------------------------------------------- circuits
+def test_figures_are_graphs_or_absent(runs):
+    """An image is a graph or there is no image: never a panel of text."""
+    from qcog.viz import VisualizationUnavailable, circuit_figure, has_drawn_marks
+
+    # a figure that cannot be drawn is reported, not faked
+    with pytest.raises(VisualizationUnavailable):
+        circuit_figure("this is not a circuit")
+
+    for slug, result in runs.items():
+        model = MODELS[slug]()
+        for name, figure in model.figures(result).items():
+            assert has_drawn_marks(figure), f"{slug}:{name} contains nothing drawn"
+
+
 def test_every_model_has_a_circuit_or_a_reason(runs):
     for slug, result in runs.items():
         model = MODELS[slug]()

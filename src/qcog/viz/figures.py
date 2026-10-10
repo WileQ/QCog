@@ -17,6 +17,7 @@ import numpy as np
 from .style import PALETTE, annotate_figure, color_for, new_figure, series_style
 
 __all__ = [
+    "VisualizationUnavailable",
     "probability_bars",
     "classical_comparison_figure",
     "circuit_figure",
@@ -516,6 +517,16 @@ def classical_comparison_figure(rows: Sequence[Mapping], title: str | None = Non
     return figure
 
 
+class VisualizationUnavailable(RuntimeError):
+    """Raised when a figure cannot be drawn.
+
+    The library never substitutes a text panel for a chart: an image is a graph or there is no
+    image.  When a drawing is impossible - a circuit the drawer cannot render, a state with no
+    Bloch vector - this error is raised, callers skip the figure, and the explanation stays
+    where text belongs: in the description, the caption, the report and the CLI.
+    """
+
+
 #: Styles the Qiskit matplotlib drawer ships with.  A full Qiskit style dictionary is
 #: accepted wherever a style name is, so a user can bring their own.
 CIRCUIT_STYLES = ("default", "iqp", "clifford", "bw")
@@ -552,10 +563,20 @@ def circuit_figure(
 
     if isinstance(design, QuantumCircuit):
         circuit = design
-    else:
+    elif isinstance(design, (tuple, list)) and len(design) == 2:
         state, questions = design
-        circuit = build_sequence_circuit(state, questions)
+        try:
+            circuit = build_sequence_circuit(state, questions)
+        except Exception as error:
+            raise VisualizationUnavailable(
+                f"these questions cannot be compiled into a circuit ({type(error).__name__}: {error})"
+            ) from error
         measurements = questions
+    else:
+        raise VisualizationUnavailable(
+            "a circuit drawing needs a QuantumCircuit or a (state, measurements) pair; "
+            f"got {type(design).__name__}"
+        )
     statistics = circuit_statistics(circuit)
     operations = ", ".join(f"{name} x{count}" for name, count in sorted(statistics["operations"].items()))
     description = (
@@ -576,19 +597,11 @@ def circuit_figure(
             circuit, output="mpl", scale=float(scale), fold=int(fold),
             initial_state=bool(initial_state), justify="left", style=style_spec,
         )
-    except Exception:  # pragma: no cover - the drawer is optional, the text is not
-        figure = new_figure(7.0, 1.6)
-        axis = figure.add_subplot(111)
-        axis.axis("off")
-        axis.text(0.0, 0.9, title or "quantum circuit", fontsize=11, fontweight="bold", va="top")
-        wrapped = " ".join(
-            description[index : index + 96] for index in range(0, min(len(description), 480), 96)
-        )
-        axis.text(0.0, 0.6, wrapped, fontsize=8, va="top", wrap=True)
-        annotate_figure(figure, description)
-        if filename is not None:
-            figure.savefig(filename, bbox_inches="tight", dpi=dpi)
-        return figure
+    except Exception as error:
+        raise VisualizationUnavailable(
+            f"the circuit of {circuit.name!r} could not be drawn ({type(error).__name__}: {error}); "
+            "the description is available as text instead: " + description
+        ) from error
     annotate_figure(
         figure,
         description,

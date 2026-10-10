@@ -6,9 +6,16 @@ screen-reader text export all read from the same place.  A chart therefore canno
 be published without an accessible alternative.
 """
 
-from .checks import catalogue_checks, figure_checks, standalone_checks, structure_checks
+from .checks import (
+    catalogue_checks,
+    figure_checks,
+    has_drawn_marks,
+    standalone_checks,
+    structure_checks,
+)
 from .figures import (
     CIRCUIT_STYLES,
+    VisualizationUnavailable,
     bloch_sphere,
     circuit_figure,
     classical_comparison_figure,
@@ -53,6 +60,7 @@ __all__ = [
     "bloch_sphere",
     "circuit_figure",
     "CIRCUIT_STYLES",
+    "VisualizationUnavailable",
     "classical_comparison_figure",
     "default_figures",
     "heatmap_figure",
@@ -66,6 +74,7 @@ __all__ = [
     "sweep_figure",
     "text_alternatives",
     "standalone_checks",
+    "has_drawn_marks",
     "structure_checks",
     "catalogue_checks",
     "figure_checks",

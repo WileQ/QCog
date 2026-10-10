@@ -215,8 +215,14 @@ def cmd_circuit(slug: str, overrides: list[str], out: str | None, which: str | N
     for note in model.circuit_notes(result):
         _print(f"note: {note}")
     if out:
-        written = model.circuit_images(result, directory=out, style=style, scale=scale, fold=fold,
-                                       format=suffix)
+        from .viz import VisualizationUnavailable
+
+        try:
+            written = model.circuit_images(result, directory=out, style=style, scale=scale, fold=fold,
+                                           format=suffix)
+        except VisualizationUnavailable as error:
+            _print(f"no image written: {error}")
+            return 1
         for name in written:
             _print(f"wrote {name} -> {out}")
     return 0

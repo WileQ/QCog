@@ -17,6 +17,7 @@ out/
 *.svg
 !docs/figures/*.png
 !showcase/figures/*.png
+!studies/quantum_advantage/figures/*.png
 .DS_Store
 Thumbs.db
 .streamlit/secrets.toml

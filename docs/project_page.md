@@ -127,12 +127,31 @@ print(explain_order_effect(report))
 print(qq_equality(forward, backward, "A", "B").summary())
 ```
 
+## Where the quantum account does better
+
+[`studies/quantum_advantage/`](../studies/quantum_advantage/) is a self-contained comparative study: five cases,
+each with simulated data, fits and a verdict, and each labelled with the precise sense in which "better" is meant
+- **S1** an *imposed impossibility* (the pattern is outside the classical family), **S2** a *parameter-free
+prediction* the classical account gets wrong, or **S3** *parsimony and unification*. The headline results:
+
+| case | sense | result |
+| --- | --- | --- |
+| Question order (two survey questions, both orders) | S1 | held-out prediction error 0.12 against 0.36; the classical identity is violated by 0.10 |
+| Conjunction fallacy (Linda) | S1 | the conjunction exceeds the classical bound by 0.12, and no classical model can pass that bound |
+| Disjunction effect (unknown opponent) | S1, verified over 200 random bipartite states | violation 0.29 in the coherent design, 1e-16 in every factorised state |
+| Correlated crowd (Condorcet) | S2 | vote-count variance 5.9 against the independent model's 1.5 at the same mean |
+| Superposition versus ignorance | S2 | a distribution-only account is wrong by 0.50 on the second question, with no parameter to adjust |
+
+The study is explicit about the limits of its own claims: the data are simulated *from the quantum models*
+(which is what makes an impossibility claim possible), and where a classical model survives - a classical model
+with order-dependent joints, and the beta-binomial as a classical model of over-dispersion - the report says so.
+
 ## How to replicate it
 
 Everything needed to reproduce every number in this project is in the repository, and the checks are
 executable:
 
-* `python -m pytest -q` runs 121 tests covering states, questions, channels, backends, analysis, classical
+* `python -m pytest -q` runs 128 tests covering states, questions, channels, backends, analysis, classical
   baselines, fitting, the CLI, the reports, the figures and every model's central claim.
 * `qcog evidence` prints the evidence table: the interference decomposition, the QQ equality, the classical
   limits, the circuit-versus-analytic parity, the game-theory checks, the entanglement calibration, and a run of
