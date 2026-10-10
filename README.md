@@ -64,10 +64,15 @@ python -m pip install -e ".[app,dev]"      # + interactive explorer + tests
 Requires Python 3.10+ and `qiskit>=2.0`, `qiskit-aer`, `numpy`, `scipy`, `pandas`, `matplotlib`.
 Everything runs offline on the free local simulator; no account, token or network access is needed.
 
-Without installing, put `src` on the path (all examples do this automatically):
+Without installing, put `src` on the path (all examples do this automatically) and use the module form of the
+command line:
+
+```bash
+PYTHONPATH=src python -m qcog list        # every command works this way
+```
 
 ```python
-import sys; sys.path.insert(0, "src")
+import sys; sys.path.insert(0, "src")     # in scripts and notebooks
 ```
 
 ## Quick start
@@ -167,7 +172,7 @@ keywords, a difficulty rating, its parameters (with bounds and which are fittabl
 ## Command line
 
 ```bash
-qcog list                                  # every model, by module
+qcog list                                  # every model (or: PYTHONPATH=src python -m qcog list)
 qcog info question-order                   # full documentation for one model
 qcog run question-order                    # run it, print findings and tables
 qcog run question-order --backend aer --shots 20000 --seed 7
