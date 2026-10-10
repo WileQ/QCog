@@ -236,13 +236,20 @@ def run_evidence() -> list[dict]:
     # 14. the wisdom of crowds disappears with perfect correlation
     from .models.module_d import CollectiveJudgment
 
-    correlated = CollectiveJudgment().run(correlation=1.0, individual_accuracy=0.7)
+    independent = CollectiveJudgment().run(correlation=0.0, individual_accuracy=0.7, sweeps=False)
+    correlated = CollectiveJudgment().run(correlation=1.0, individual_accuracy=0.7, sweeps=False)
     condorcet = condorcet_jury_probability(0.7, 7)
     rows.append(
         _row(
+            "independent judges reproduce Condorcet's theorem exactly",
+            abs(independent.analysis["majority_accuracy"] - condorcet) < 1e-9,
+            f"model {independent.analysis['majority_accuracy']:.4f} vs Condorcet {condorcet:.4f}",
+        )
+    )
+    rows.append(
+        _row(
             "perfectly correlated judges lose the Condorcet advantage",
-            abs(correlated.analysis["majority_accuracy"] - 0.7) < 1e-9
-            and abs(condorcet - 0.8740) < 5e-4,
+            abs(correlated.analysis["majority_accuracy"] - 0.7) < 1e-9,
             f"correlated majority {correlated.analysis['majority_accuracy']:.4f} vs Condorcet {condorcet:.4f}",
         )
     )

@@ -713,6 +713,7 @@ qcog info polarization
 - This is a model of response probabilities, not a claim about what the brain does.
 - A quantum model only means the data are described by a quantum probability space; classical models may fit equally well, and the classical baseline is reported for that reason.
 - Correlation is modelled as a GHZ-style state; real groups correlate for many reasons, and the model does not distinguish between them.
+- A majority means strictly more than half, so an evenly split even-sized group has no majority; the classical baseline uses the same convention.
 
 **References.**
 

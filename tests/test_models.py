@@ -115,6 +115,24 @@ def test_collective_judgement_claims():
     assert np.isclose(correlated.analysis["majority_accuracy"], 0.7)
 
 
+def test_independent_judges_reproduce_condorcet_exactly():
+    """The classical limit of the crowd model must be exactly the classical theorem."""
+    from qcog.core.classical import condorcet_jury_probability
+
+    for judges in (7, 8, 9):
+        independent = get_model("collective-judgment").run(
+            correlation=0.0, num_agents=judges, sweeps=False
+        )
+        condensed = condorcet_jury_probability(0.7, judges)
+        assert np.isclose(independent.analysis["majority_accuracy"], condensed, atol=1e-9), judges
+    # and with perfect correlation the crowd inherits the individual accuracy
+    for judges in (7, 8):
+        correlated = get_model("collective-judgment").run(
+            correlation=1.0, num_agents=judges, sweeps=False
+        )
+        assert np.isclose(correlated.analysis["majority_accuracy"], 0.7, atol=1e-9)
+
+
 def test_information_cascade_reports_a_cascade(results):
     cascade = results["information-cascades"].analysis["cascade"]
     assert cascade["adoptions"] >= 1

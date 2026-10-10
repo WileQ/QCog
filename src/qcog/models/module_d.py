@@ -431,6 +431,8 @@ class CollectiveJudgment(PopulationModel):
     caveats = default_caveats + (
         "Correlation is modelled as a GHZ-style state; real groups correlate for many reasons, and the model "
         "does not distinguish between them.",
+        "A majority means strictly more than half, so an evenly split even-sized group has no majority; the "
+        "classical baseline uses the same convention.",
     )
     keywords = ("collective judgement", "Condorcet", "wisdom of crowds", "correlation", "aggregation")
     difficulty = "intermediate"
@@ -481,11 +483,12 @@ class CollectiveJudgment(PopulationModel):
     def analyse(self, context: dict, results: dict) -> tuple[dict, list[str], str]:
         count = len(context["votes"])
         distribution = results["distribution"]
-        majority = sum(
+        # "Majority" means strictly more than half, so an even-sized group that splits
+        # evenly has no majority. The classical baseline uses the same convention, which
+        # is what makes the two numbers comparable.
+        majority_accuracy = sum(
             probability for votes, probability in distribution.items() if votes > count / 2
         )
-        tie_break = 0.5 * distribution.get(count // 2, 0.0) if count % 2 else 0.0
-        majority_accuracy = majority + tie_break
         independent = independent_vote_distribution(
             [float(context["parameters"]["individual_accuracy"])] * count
         )
@@ -515,6 +518,8 @@ class CollectiveJudgment(PopulationModel):
             f"The distribution of the number of votes in favour has mean {count * individual:.2f} and variance "
             f"{_variance(distribution, count):.2f}, against the independent binomial variance "
             f"{count * individual * (1 - individual):.2f}: correlation is visible as over-dispersion.",
+            f"With independent judges (correlation 0) the model reproduces Condorcet's {condorcet:.4f} exactly, "
+            "which is the classical limit of this mechanism; a tie counts as no majority for both.",
         ]
         summary = (
             f"Majority accuracy {majority_accuracy:.3f} versus Condorcet {condorcet:.3f} for the same "
@@ -586,7 +591,7 @@ def _crowd_metrics(context: dict, correlation: float) -> dict:
     distribution = vote_distribution(rebuilt["state"].density, count)
     majority = sum(probability for votes, probability in distribution.items() if votes > count / 2)
     return {
-        "majority accuracy": majority + 0.5 * distribution.get(count // 2, 0.0),
+        "majority accuracy": majority,
         "individual accuracy": float(parameters["individual_accuracy"]),
         "variance": _variance(distribution, count),
     }

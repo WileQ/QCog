@@ -251,14 +251,17 @@ class ClassicalPrisonersDilemma:
 
 
 def condorcet_jury_probability(individual_accuracy: float, jurors: int) -> float:
-    """Probability a majority of ``jurors`` independent voters is correct.
+    """Probability a majority of independent voters is correct.
 
-    The classical aggregation baseline used by the collective-judgement model.
+    The classical aggregation baseline used by the collective-judgement model.  A
+    *majority* means strictly more than half, so an even-sized group that splits evenly
+    has no majority and scores as incorrect - the same convention the quantum model
+    uses, which is what makes the two numbers comparable.
     """
     if not 0.0 <= individual_accuracy <= 1.0:
         raise ValueError("individual_accuracy must lie in [0, 1]")
-    if jurors <= 0 or jurors % 2 == 0:
-        raise ValueError("jurors must be a positive odd number")
+    if jurors <= 0:
+        raise ValueError("jurors must be a positive integer")
     from math import comb
 
     total = 0.0
