@@ -79,6 +79,15 @@ def test_cli_prints_the_classical_comparison(capsys):
     assert "Quantum circuit(s)" in output
 
 
+def test_cli_circuit_draws_only_the_design_that_was_asked_for(capsys, tmp_path):
+    """``--which`` has to filter the drawings, not only the listing."""
+    assert main(["circuit", "question-order", "--which", "B then A", "--out", str(tmp_path),
+                 "--format", "svg"]) == 0
+    written = sorted(path.name for path in tmp_path.iterdir())
+    assert len(written) == 1 and "B_then_A" in written[0], written
+    assert "B then A" in capsys.readouterr().out
+
+
 def test_cli_circuit_command(capsys, tmp_path):
     assert main(["circuit", "quantum-prisoners-dilemma"]) == 0
     output = capsys.readouterr().out

@@ -6,7 +6,7 @@ Thanks for considering it. This project is deliberately built so that contributi
 
 ```bash
 python -m pip install -e ".[app,dev]"
-python -m pytest -q            # 134 tests, about one minute
+python -m pytest -q            # 135 tests, about one minute
 qcog evidence                  # what the library checks about itself
 ```
 

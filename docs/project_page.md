@@ -153,7 +153,7 @@ with order-dependent joints, and the beta-binomial as a classical model of over-
 Everything needed to reproduce every number in this project is in the repository, and the checks are
 executable:
 
-* `python -m pytest -q` runs 134 tests covering states, questions, channels, backends, analysis, classical
+* `python -m pytest -q` runs 135 tests covering states, questions, channels, backends, analysis, classical
   baselines, fitting, the CLI, the reports, the figures and every model's central claim.
 * `qcog evidence` prints the evidence table: the interference decomposition, the QQ equality, the classical
   limits, the circuit-versus-analytic parity, the game-theory checks, the entanglement calibration, and a run of

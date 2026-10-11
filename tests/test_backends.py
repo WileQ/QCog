@@ -8,6 +8,25 @@ from qcog.core import basis_state, amplitudes, NoiseSpec, question, run_sequence
 from qcog.core.linalg import num_qubits_for_dim
 
 
+@pytest.fixture(scope="session")
+def aer():
+    """Qiskit Aer, or a skip with the reason.
+
+    Aer ships compiled extension modules that load on first use, and on some machines - a
+    Windows box under load, for instance - the loader fails with "DLL load failed while
+    importing controller_wrappers".  The library treats Aer as optional for exactly this
+    reason: it retries, and then says so in a sentence.  The tests that need it follow the
+    same rule, so an unusable Aer is a skip with the reason attached rather than a red suite.
+    """
+    try:
+        run_sequence(basis_state(0, 2), [question(0.5, 0.0, "Q")], backend="aer_exact")
+    except RuntimeError as error:  # pragma: no cover - depends on the machine
+        if "could not be loaded" in str(error):
+            pytest.skip(str(error))
+        raise
+    return True
+
+
 @pytest.fixture()
 def design():
     state = basis_state(0, 2)
@@ -50,7 +69,7 @@ def test_backend_registry():
         get_backend("does-not-exist")
 
 
-def test_exact_matches_compiled_prefix_circuits(design):
+def test_exact_matches_compiled_prefix_circuits(aer, design):
     state, measurements = design
     exact = run_sequence(state, measurements)
     circuit = AerExactBackend().run(state, measurements)
@@ -59,7 +78,7 @@ def test_exact_matches_compiled_prefix_circuits(design):
     assert circuit.is_exact
 
 
-def test_shot_based_circuit_agrees_within_sampling_error(design):
+def test_shot_based_circuit_agrees_within_sampling_error(aer, design):
     state, measurements = design
     exact = run_sequence(state, measurements)
     sampled = AerBackend().run(state, measurements, shots=30000, seed=99)
@@ -68,7 +87,7 @@ def test_shot_based_circuit_agrees_within_sampling_error(design):
     assert sampled.counts is not None
 
 
-def test_circuit_reproduces_the_order_effect(design):
+def test_circuit_reproduces_the_order_effect(aer, design):
     state, measurements = design
     forward = AerExactBackend().run(state, measurements)
     backward = AerExactBackend().run(state, list(reversed(measurements)))
@@ -82,7 +101,7 @@ def test_sampled_backend_marks_results_as_inexact(design):
     assert np.isclose(sum(result.joint.values()), 1.0)
 
 
-def test_mixed_states_cannot_be_compiled(design):
+def test_mixed_states_cannot_be_compiled(aer, design):
     _, measurements = design
     state = amplitudes(1, 1).apply_channel(
         __import__("qcog.core", fromlist=["depolarizing_channel"]).depolarizing_channel(0.2, 2).kraus
@@ -91,7 +110,7 @@ def test_mixed_states_cannot_be_compiled(design):
         AerBackend().build_circuit(state, measurements)
 
 
-def test_partial_measurement_does_not_disturb_the_other_qubit():
+def test_partial_measurement_does_not_disturb_the_other_qubit(aer):
     """A question about one subsystem must not collapse the other one."""
     from qcog.core import tensor
     from qcog.models.common import local_question
@@ -107,7 +126,7 @@ def test_partial_measurement_does_not_disturb_the_other_qubit():
     assert worst < 5.0 * np.sqrt(0.25 / 20000)
 
 
-def test_multi_qubit_sequence_matches_exact():
+def test_multi_qubit_sequence_matches_exact(aer):
     from qcog.core import tensor
     from qcog.models.common import local_question
 

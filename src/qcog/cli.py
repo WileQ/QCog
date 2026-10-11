@@ -218,8 +218,9 @@ def cmd_circuit(slug: str, overrides: list[str], out: str | None, which: str | N
         from .viz import VisualizationUnavailable
 
         try:
-            written = model.circuit_images(result, directory=out, style=style, scale=scale, fold=fold,
-                                           format=suffix)
+            # draw exactly what was listed: --which picks one design, otherwise every design
+            written = model.circuit_images(result, name=which, directory=out, style=style, scale=scale,
+                                           fold=fold, format=suffix)
         except VisualizationUnavailable as error:
             _print(f"no image written: {error}")
             return 1
