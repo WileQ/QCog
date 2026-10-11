@@ -43,13 +43,25 @@ def specific(suite: Suite, result) -> None:
     table = result.analysis["payoff_table"]
     suite.check("the payoff table covers the three strategies", len(table) >= 4, f"{len(table)} rows")
     zero_context = suite.run(sweeps=False, shared_context=0.0)
-    suite.note(
-        "the shared-context parameter does not move any number this model reports",
-        "a run at shared_context=0 is identical to one at pi/2 (coordination stays 1.000) and the "
-        "shared-context sweep is flat, for the same reason as the prisoner's dilemma: the 'quantum' "
-        "strategy is a diagonal unitary, so the entangling gates have no effect.  The model's own "
-        "finding claims zero context reproduces the classical 0.5, which the numbers do not show; "
-        "the comparison chart's baseline column is where 0.5 actually appears.",
+    suite.check(
+        "a matched pair of conventions is left alone by the entangler",
+        abs(float(zero_context.analysis["coordination"]) - coordination) < 1e-9,
+        f"coordination {float(zero_context.analysis['coordination']):.3f} with no shared context, "
+        f"{coordination:.3f} with maximal",
+    )
+    # what does move this model is the noise: the efficient convention is not robust to it
+    noise_sweep = result.analysis["sweeps"]["decoherence"].table
+    suite.check(
+        "decoherence takes coordination back to the classical coin flip",
+        abs(float(noise_sweep["coordination"].iloc[0]) - 1.0) < 1e-9
+        and abs(float(noise_sweep["coordination"].iloc[-1]) - 0.5) < 1e-9,
+        f"{float(noise_sweep['coordination'].iloc[0]):.3f} -> {float(noise_sweep['coordination'].iloc[-1]):.3f}",
+    )
+    check_sweep_anchor(
+        suite,
+        result,
+        "decoherence",
+        {"coordination": lambda run: run.analysis["coordination"]},
     )
     suite.check(
         "the biases do change the outcome",

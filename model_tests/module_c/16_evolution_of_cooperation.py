@@ -61,6 +61,13 @@ def specific(suite: Suite, result) -> None:
         or True,
         str(result.parameters["start"]),
     )
+    suite.check(
+        "the entanglement sweep moves the composition it is named after",
+        abs(float(result.analysis["sweeps"]["entanglement"].table["C share"].iloc[0])
+            - float(result.analysis["sweeps"]["entanglement"].table["C share"].iloc[-1])) > 0.5,
+        f"C share {float(result.analysis['sweeps']['entanglement'].table['C share'].iloc[0]):.3f} -> "
+        f"{float(result.analysis['sweeps']['entanglement'].table['C share'].iloc[-1]):.3f}",
+    )
     check_sweep_anchor(
         suite,
         result,

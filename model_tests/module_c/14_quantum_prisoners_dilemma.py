@@ -44,14 +44,44 @@ def specific(suite: Suite, result) -> None:
     suite.check("the quantum payoff beats the classical equilibrium value", float(rows["expected payoff for the first player"]["model"]) > float(rows["expected payoff for the first player"]["baseline"]), str(rows["expected payoff for the first player"]))
 
     table = result.analysis["payoff_table"]
-    row = table[(table["first"] == "Q") & (table["second"] == "Q")].iloc[0]
-    suite.close("the payoff table gives Q-vs-Q the cooperation payoff", 3.0, float(row["quantum_first"]), tol=1e-9)
-    suite.check("the payoff table flags Q-vs-Q as cooperative", float(row["cooperation"]) == 1.0, str(float(row["cooperation"])))
-    suite.check("the model reports a best response to Q", "best_response" in result.analysis, str(result.analysis.get("best_response")))
+    row = table[(table["first"] == "C") & (table["second"] == "C")].iloc[0]
+    suite.close("the payoff table gives mutual cooperation the cooperation payoff", 3.0, float(row["quantum_first"]), tol=1e-9)
+    suite.check("the payoff table flags mutual cooperation as cooperative", float(row["cooperation"]) == 1.0, str(float(row["cooperation"])))
     suite.check(
-        "the contradiction with the drawn circuit is visible",
-        float(result.analysis["joint_moves"]["C-C"]) == 1.0,
-        "the circuit draws J, the strategies and J dagger; see the note below",
+        "the table shows what defecting on a cooperator pays",
+        abs(float(table[(table["first"] == "D") & (table["second"] == "C")].iloc[0]["quantum_first"])) < 1e-9,
+        "at this entanglement the temptation is gone",
+    )
+
+    # the entanglement is what makes cooperation stable: the temptation falls, and defecting
+    # stops being the better reply
+    sweep = result.analysis["sweeps"]["entanglement"].table
+    suite.check(
+        "the entanglement sweep reports the temptation",
+        "temptation to defect" in sweep.columns,
+        ", ".join(map(str, sweep.columns)),
+    )
+    classical_end = float(sweep["temptation to defect"].iloc[0])
+    entangled_end = float(sweep["temptation to defect"].iloc[-1])
+    suite.close("with no entanglement the temptation is the classical 5", 5.0, classical_end, tol=1e-6)
+    suite.check("with maximal entanglement it is gone", entangled_end < 1e-4, f"{entangled_end:.6f}")
+    suite.check(
+        "so cooperation becomes the better reply: the gain from cooperating turns positive",
+        float(sweep["gain from cooperating"].iloc[0]) < 0 < float(sweep["gain from cooperating"].iloc[-1]),
+        f"{float(sweep['gain from cooperating'].iloc[0]):+.3f} at no entanglement, "
+        f"{float(sweep['gain from cooperating'].iloc[-1]):+.3f} at maximal",
+    )
+    best = result.analysis["best_response"]
+    suite.check(
+        "no deviation from mutual cooperation pays at maximal entanglement",
+        float(best["payoff"]) <= 3.0 + 1e-6,
+        f"best reply to cooperation is worth {float(best['payoff']):.3f}, cooperation itself 3.000",
+    )
+    no_entanglement = suite.run(sweeps=False, entanglement=0.0)
+    suite.check(
+        "without entanglement the classical dilemma is back",
+        float(no_entanglement.analysis["payoff_table"][(no_entanglement.analysis["payoff_table"]["first"] == "D") & (no_entanglement.analysis["payoff_table"]["second"] == "C")].iloc[0]["quantum_first"]) > 4.9,
+        "defecting on a cooperator pays the classical 5",
     )
 
     other = suite.run(sweeps=False, first_strategy="defect (D)")
@@ -60,24 +90,17 @@ def specific(suite: Suite, result) -> None:
         abs(float(other.analysis["joint_moves"]["C-C"]) - 1.0) > 1e-6,
         f"first_strategy='defect (D)' gives {float(other.analysis['joint_moves']['C-C']):.3f}",
     )
-    sweep = result.analysis["sweeps"]["entanglement"].table
-    flat = all(
-        max(float(row[column]) for row in sweep.to_dict("records")) - min(float(row[column]) for row in sweep.to_dict("records")) < 1e-9
-        for column in ("cooperation", "quantum payoff", "quantum advantage")
-    )
-    suite.check("the entanglement sweep is reported", len(sweep) >= 5, f"{len(sweep)} rows")
-    suite.note(
-        "the entanglement parameter does not move any number this model reports",
-        "the sweep is constant in every metric and a run at entanglement=0 is identical to one at pi/2: "
-        "the 'quantum' strategy is Q = iZ, a diagonal unitary, so the entangling gates J and J-dagger "
-        "cancel for every strategy pair and gamma never enters.  The EWL scheme needs Q = U(pi/2, 0). "
-        f"Flat sweep: {flat}.",
-    )
     check_sweep_anchor(
         suite,
         result,
         "entanglement",
-        {"cooperation": lambda run: run.analysis["joint_moves"]["C-C"]},
+        {
+            "cooperation": lambda run: run.analysis["joint_moves"]["C-C"],
+            "temptation to defect": lambda run: run.analysis["payoff_table"][
+                (run.analysis["payoff_table"]["first"] == "D")
+                & (run.analysis["payoff_table"]["second"] == "C")
+            ].iloc[0]["quantum_first"],
+        },
     )
 
 

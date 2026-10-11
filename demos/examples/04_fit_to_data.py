@@ -2,6 +2,12 @@
 
 ``python demos/examples/04_fit_to_data.py``
 
+You have frequencies from a study, not a theory. The script fits the model's parameters to the
+observed joint distribution, fits a classical alternative to the same numbers, and prints the
+comparison: the workflow to use with real data in place of the illustrative file shipped here.
+Look at how far the fitted parameters moved from their defaults, and at whether the fitted model
+beats the classical one on the same data.
+
 The data file used here is *illustrative synthetic data* shaped after the
 qualitative pattern reported in the literature; see ``data/README.md``.  Its purpose
 is to demonstrate the fitting and model-comparison workflow, not to make an

@@ -519,8 +519,8 @@ qcog info contradictory-beliefs
 | parameter | kind | default | bounds | fittable | meaning |
 | --- | --- | --- | --- | --- | --- |
 | `entanglement` | float | 1.5707963267948966 | 0.0 to 1.5707963267948966 | no | Angle of the entangling gate: 0 is the classical game, pi/2 is maximal entanglement. |
-| `first_strategy` | choice (cooperate (C), defect (D), quantum (Q)) | 'quantum (Q)' | - | no | Strategy used by the row player. |
-| `second_strategy` | choice (cooperate (C), defect (D), quantum (Q)) | 'quantum (Q)' | - | no | Strategy used by the column player. |
+| `first_strategy` | choice (cooperate (C), defect (D), quantum (Q)) | 'cooperate (C)' | - | no | Strategy used by the row player. The entangler is what makes mutual cooperation stable; the other strategies are there to be tested against it. |
+| `second_strategy` | choice (cooperate (C), defect (D), quantum (Q)) | 'cooperate (C)' | - | no | Strategy used by the column player. |
 | `decoherence` | float | 0.0 | 0.0 to 1.0 | no | Depolarising probability applied after the strategy unitaries. |
 
 **Adjustable classical comparison.** `classical=False` switches it off; `rows` and `max_rows` select comparison rows for every model; this model's baseline is a structural constraint with no parameters of its own.
@@ -707,7 +707,7 @@ qcog info coordination-games
 | parameter | kind | default | bounds | fittable | meaning |
 | --- | --- | --- | --- | --- | --- |
 | `num_agents` | int | 5 | 2 to 8 | no | Population size. The simulation is dense (2^n amplitudes), so 8 is the practical interactive limit; the classical baselines cover larger networks. |
-| `topology` | choice (ring, line, complete, star, two-communities, random) | 'ring' | - | no | Who talks to whom. |
+| `topology` | choice (ring, line, complete, star, two-communities, random) | 'ring' | - | no | Which network the agents sit on - a ring, a line, a complete graph, a star, two communities or a random graph - and therefore who can influence whom. |
 | `initial_spread` | float | 1.0 | 0.0 to 1.4 | no | How far apart the agents' initial opinions are. |
 | `interaction_strength` | float | 0.7853981633974483 | 0.0 to 1.5707963267948966 | no | Angle of the partial swap: how much of each opinion is exchanged per encounter. |
 | `decoherence` | float | 0.03 | 0.0 to 0.5 | no | Per-agent depolarising probability per round (forgetting). |

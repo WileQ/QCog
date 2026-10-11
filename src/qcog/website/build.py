@@ -1029,6 +1029,13 @@ def _build_site(
             'the command, the numbers, the classical comparison and the circuit for each: '
             '<a href="real-world.html">real questions, run with Q-Cog</a>.</p>'
         )
+        landing.append(
+            '<h2>The showcase</h2><p class="lede-meta">A scripted tour of four models, one per module, '
+            'with its captured output: the cognitive question, the mechanism, the classical baseline, '
+            'every parameter with its bounds, the findings, the model-versus-classical table and the '
+            'caveats for each. <a href="showcase.html">Read the captured run</a>, or run '
+            '<code>python demos/showcase/run_showcase.py</code> yourself.</p>'
+        )
         write(
             "examples/real-world.html",
             _page(
@@ -1038,6 +1045,41 @@ def _build_site(
                 depth=1,
                 description="Six real questions, with the command, the numbers, the classical comparison and "
                 "the circuit for each.",
+                repo_url=repo_url,
+            ),
+        )
+        showcase_output = repository / "demos" / "showcase" / "output.txt"
+        showcase_readme = repository / "demos" / "showcase" / "README.md"
+        showcase_body = [
+            "<h1>The showcase: four models, one run, captured</h1>",
+            '<p class="lead">A scripted tour of four models - one per module - chosen because between them '
+            "they exercise every feature of the library. For each model it prints the cognitive question, the "
+            "quantum mechanism, the classical baseline, every parameter with its bounds, the findings, the "
+            "model-versus-classical table, whether a circuit was drawn and what it contains, and the caveats. "
+            "Then it saves every figure and an accessible HTML report per model.</p>",
+            '<p class="lede-meta">Run it with <code>python demos/showcase/run_showcase.py</code> '
+            "(or <code>--all</code> for the whole catalogue, <code>--reports</code> for the HTML reports). "
+            "The text below is exactly what a plain run prints.</p>",
+        ]
+        if showcase_readme.exists():
+            # the README's own title becomes a section: the page already has its h1
+            body, _headings = markdown.to_html(showcase_readme.read_text(encoding="utf-8"), heading_shift=1)
+            showcase_body.append(body)
+        if showcase_output.exists():
+            showcase_body.append(
+                '<h2>The captured output</h2><pre class="terminal"><code>'
+                + _esc(showcase_output.read_text(encoding="utf-8"))
+                + "</code></pre>"
+            )
+        write(
+            "examples/showcase.html",
+            _page(
+                "The showcase: four models, one run, captured - Q-Cog",
+                "\n".join(showcase_body),
+                active="examples/index.html",
+                depth=1,
+                description="The showcase's captured run: four models, their findings, their classical "
+                "comparisons, their circuits and their caveats.",
                 repo_url=repo_url,
             ),
         )

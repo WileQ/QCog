@@ -8,6 +8,23 @@ Everything a reader needs to *use* Q-Cog lives here, in one place, outside the p
 | [`examples/`](examples/) | six runnable scripts, from a five-minute first look to the full catalogue | you prefer scripts, or want one task per file |
 | [`showcase/`](showcase/) | a scripted tour of four models with its **captured output**, every figure and an HTML report per model | you want the results without running anything |
 
+## Which one do I want?
+
+Three things live here, and they answer different questions.
+
+| | What it is | What it does | What it is not |
+| --- | --- | --- | --- |
+| [`quickstart.ipynb`](quickstart.ipynb) | a notebook | walks through **one** real survey cell by cell: the belief state, the two questions, both orders, the order effect, the classical identity that fails, the circuits with the survey questions on the gates, a run on the simulator. Every step says why it is there. | not a catalogue - it goes deep on one model instead of wide over many |
+| [`examples/`](examples/) | six short scripts | one **task** per script, printed to the terminal: first steps, the flagship model three ways, compiling for hardware, fitting to data, the whole catalogue with a report, and the survey as a script. On the site each one also has its scenario, what to look for in the output and what the numbers mean. | not a tour of the models - the tasks are the point, and most use one model |
+| [`showcase/`](showcase/) | one script, plus its captured output | a **scripted tour of four models**, one per module. For each it prints the cognitive question, the mechanism, the classical baseline, every parameter with its bounds, the findings, the model-versus-classical table, whether a circuit was drawn and what it contains, and the caveats - then saves every figure and an accessible HTML report. `output.txt` is exactly what a plain run prints. | not interactive, and not the whole catalogue - four models, chosen because between them they exercise every feature |
+
+In one line: **the notebook teaches one case slowly; the examples are recipes for six tasks; the
+showcase is the guided tour with the results already captured, so a reader can see what the library
+produces without running anything.**
+
+Reading order, if you want one: the notebook, then the example that matches what you are doing, then
+the showcase for the breadth, then the model pages on the site for any one model in detail.
+
 ## Run them
 
 ```bash

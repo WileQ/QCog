@@ -53,24 +53,41 @@ def specific(suite: Suite, result) -> None:
     )
     eager = suite.run(sweeps=False, first_stance=1.0, second_stance=1.0)
     suite.check("the stances are the players' own dials", eager is not None, "both stances at 1.0")
-    # the shared-context sweep is computed with the suspicion dial at zero, while the run uses the
-    # suspicion parameter, so the chart and the run only agree once suspicion is switched off
+    # sharing a context is what makes committing safe: what hedging against a committer pays
+    # falls from the classical 3 to 0
     table = result.analysis["sweeps"]["shared context"].table
     parameter = result.analysis["sweeps"]["shared context"].parameter
     own = float(result.parameters["shared_context"])
     index = min(range(len(table)), key=lambda row: abs(float(table[parameter].iloc[row]) - own))
-    calm = suite.run(sweeps=False, suspicion=0.0)
+    suite.check(
+        "the shared-context sweep reports what hedging costs",
+        "hedging against commitment" in table.columns,
+        ", ".join(map(str, table.columns)),
+    )
     suite.close(
-        "the shared-context sweep is the model with no suspicion",
-        float(calm.analysis["joint_moves"]["commit-commit"]),
+        "with no shared context hedging against a committer pays the classical 3",
+        3.0,
+        float(table["hedging against commitment"].iloc[0]),
+        tol=0.05,      # the sweep carries the model's own suspicion, which costs a little
+    )
+    suite.check(
+        "with maximal shared context hedging is nearly worthless, so committing is safe",
+        float(table["hedging against commitment"].iloc[-1]) < 0.2,
+        f"{float(table['hedging against commitment'].iloc[-1]):.3f} against a commitment payoff of 4.000",
+    )
+    suite.close(
+        "the sweep is the run: the same agreement at the model's own shared context",
+        agreement,
         float(table["agreement"].iloc[index]),
         tol=1e-6,
     )
-    suite.note(
-        "the shared-context sweep is not the run: it fixes suspicion at zero",
-        f"at the model's own shared_context the chart says {float(table['agreement'].iloc[index]):.4f} "
-        f"while the run reports {agreement:.4f} with suspicion={float(result.parameters['suspicion']):.2f}; "
-        "the sweep is correct for the design it computes, but its name suggests otherwise",
+    check_sweep_anchor(
+        suite,
+        result,
+        "shared context",
+        {
+            "agreement": lambda run: run.analysis["joint_moves"]["commit-commit"],
+        },
     )
     check_sweep_anchor(
         suite,

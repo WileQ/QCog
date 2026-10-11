@@ -2,6 +2,11 @@
 
 ``python demos/examples/03_hardware_and_ionq.py``
 
+Two constructions, printed with what each costs: one circuit for the whole interview (mid-circuit
+measurement, minimal qubits) and one per branch (no mid-circuit measurement and no reset, which is
+what restricted devices require). If an IonQ token is in the environment, the same circuits are
+submitted there; if not, the script says so and stops.
+
 Judging note: IonQ's simulator or hardware never add or subtract points, and the
 free local simulator is enough for everything in this repository.  This example
 exists to show that the compilation is portable and that no rewrite is needed.

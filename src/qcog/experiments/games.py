@@ -47,7 +47,7 @@ def entangling_unitary(gamma: float) -> np.ndarray:
 def strategy_unitary(theta: float, phi: float = 0.0) -> np.ndarray:
     """The Eisert strategy family ``U(theta, phi)``.
 
-    ``U(0, 0) = I`` is cooperate, ``U(pi, 0)`` is defect and ``U(0, pi/2)`` is the
+    ``U(0, 0) = I`` is cooperate, ``U(pi, 0)`` is defect and ``U(pi/2, 0)`` is the
     "quantum" strategy ``Q``, which is what makes cooperation the equilibrium.
     """
     half = theta / 2.0
@@ -63,7 +63,7 @@ def strategy_unitary(theta: float, phi: float = 0.0) -> np.ndarray:
 #: The named strategies used throughout the library and the UI.
 CLASSICAL_C = {"name": "C  cooperate", "short": "C", "theta": 0.0, "phi": 0.0, "kind": "classical"}
 CLASSICAL_D = {"name": "D  defect", "short": "D", "theta": np.pi, "phi": 0.0, "kind": "classical"}
-QUANTUM_Q = {"name": "Q  quantum", "short": "Q", "theta": 0.0, "phi": np.pi / 2, "kind": "quantum"}
+QUANTUM_Q = {"name": "Q  quantum", "short": "Q", "theta": np.pi / 2, "phi": 0.0, "kind": "quantum"}
 
 
 @dataclass(frozen=True)
@@ -93,7 +93,7 @@ class QuantumStrategy:
 
     @classmethod
     def quantum(cls) -> "QuantumStrategy":
-        return cls("Q", 0.0, float(np.pi / 2), "the quantum strategy Q = iZ")
+        return cls("Q", float(np.pi / 2), 0.0, "the quantum strategy Q = U(pi/2, 0)")
 
 
 NASH_STRATEGIES = (QuantumStrategy.cooperate(), QuantumStrategy.defect(), QuantumStrategy.quantum())
@@ -168,9 +168,11 @@ class QuantumGame:
     def outcome_distribution(self, first: QuantumStrategy, second: QuantumStrategy) -> dict[tuple[str, str], float]:
         """Joint distribution over the classical moves ``(own, opponent)`` at the end of the game.
 
-        Qubit ordering is little-endian and the first player owns the *most*
-        significant qubit, so the basis index of the move pair ``(own, opponent)`` is
-        ``opponent_bit + 2 * own_bit``.  With this convention the unentangled game
+        Qubit ordering is little-endian, and the first player's unitary is the first factor of
+        ``kron(first, second)``, which Qiskit applies to the *higher* qubit index, so the first
+        player owns the most significant bit.  The basis index of the move pair
+        ``(own, opponent)`` is therefore ``opponent_bit + 2 * own_bit``, which is what makes the
+        unentangled game
         (gamma = 0) reproduces the classical payoff matrix in both directions, which
         is checked by ``qcog evidence``.
         """

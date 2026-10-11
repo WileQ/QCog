@@ -1,6 +1,12 @@
 """Run every model, print the self-check table, and write the full report.
 
 ``python demos/examples/05_catalogue_report.py [--max-models N]``
+
+The whole library in one run: every model in all four modules, the evidence table the library keeps
+about itself - identities that have to hold, rather than numbers to admire - and a self-contained
+HTML report. No JavaScript, no network, every chart with its description and the data table behind
+it, so the report can be published as it stands. ``--max-models N`` stops after N models, which is
+useful while exploring.
 """
 
 from __future__ import annotations

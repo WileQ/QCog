@@ -50,10 +50,15 @@ def test_game_payoff_table_and_best_response():
     game = QuantumGame(dilemma_matrix := ClassicalPrisonersDilemma().payoff_matrix(), entanglement=np.pi / 2)
     table = game.payoff_table()
     assert len(table) == 9
-    assert np.isclose(table[(table["first"] == "Q") & (table["second"] == "Q")]["quantum_first"].iloc[0], 3.0)
+    cooperative = table[(table["first"] == "C") & (table["second"] == "C")]["quantum_first"].iloc[0]
+    temptation = table[(table["first"] == "D") & (table["second"] == "C")]["quantum_first"].iloc[0]
+    assert np.isclose(cooperative, 3.0)
+    # the entangler is what removes the classical temptation to defect on a cooperator
+    assert np.isclose(temptation, 0.0)
     del dilemma_matrix
-    best = game.best_response(QuantumStrategy.quantum(), grid=7)
-    assert best["best"]["payoff"] >= 3.0
+    best = game.best_response(QuantumStrategy.cooperate(), grid=7)
+    # so cooperating is the best reply to cooperating: the dilemma is closed
+    assert np.isclose(best["best"]["payoff"], cooperative)
 
 
 def test_strategy_unitaries_are_unitary():

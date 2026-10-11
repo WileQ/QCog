@@ -55,8 +55,10 @@ class QuantumPrisonersDilemma(Model):
     """The Eisert-Wilkert-Lewenstein quantum prisoner's dilemma.
 
     Before choosing, the two players' qubits are entangled by ``J(gamma)``; after
-    choosing, the entanglement is undone and the moves are measured.  With maximal
-    entanglement the strategy ``Q`` is the best reply to itself, so mutual
+    choosing, the entanglement is undone and the moves are measured.  At maximal
+    entanglement, defecting against a cooperator is punished - the defector receives
+    0 instead of the classical 5 - so mutual cooperation becomes the stable outcome.
+    The classical game is recovered exactly at ``gamma = 0``.  Mutual
     cooperation becomes the equilibrium at payoff 3 instead of the classical
     mutual defection at payoff 1.  The model reports the full payoff table, the
     best-response scan, and how both degrade with decoherence.
@@ -102,9 +104,11 @@ class QuantumPrisonersDilemma(Model):
         ParamSpec("entanglement", "float", PI / 2, "Entanglement (gamma)",
                   "Angle of the entangling gate: 0 is the classical game, pi/2 is maximal entanglement.",
                   0.0, PI / 2),
-        ParamSpec("first_strategy", "choice", "quantum (Q)", "First player's strategy",
-                  "Strategy used by the row player.", choices=tuple(STRATEGY_TABLE)),
-        ParamSpec("second_strategy", "choice", "quantum (Q)", "Second player's strategy",
+        ParamSpec("first_strategy", "choice", "cooperate (C)", "First player's strategy",
+                  "Strategy used by the row player. The entangler is what makes mutual cooperation "
+                  "stable; the other strategies are there to be tested against it.",
+                  choices=tuple(STRATEGY_TABLE)),
+        ParamSpec("second_strategy", "choice", "cooperate (C)", "Second player's strategy",
                   "Strategy used by the column player.", choices=tuple(STRATEGY_TABLE)),
         ParamSpec("decoherence", "float", 0.0, "Decoherence",
                   "Depolarising probability applied after the strategy unitaries.", 0.0, 1.0),
@@ -150,8 +154,12 @@ class QuantumPrisonersDilemma(Model):
             classical_payoffs = classical.payoffs("D", "D")
             classical_note = "classical Nash benchmark (D, D), because Q has no classical counterpart"
         table = game.payoff_table(tuple(STRATEGY_TABLE.values()))
-        best = game.best_response(QuantumStrategy.quantum(), grid=21)
-        cooperative_value = game.expected_payoffs(QuantumStrategy.quantum(), QuantumStrategy.quantum())["first"]
+        # the scan answers the question that matters: against what the opponent is actually
+        # playing, is there a better reply than the one in play?
+        best = game.best_response(second, grid=21)
+        cooperative_value = game.expected_payoffs(
+            QuantumStrategy.cooperate(), QuantumStrategy.cooperate()
+        )["first"]
         defector_value = game.expected_payoffs(QuantumStrategy.defect(), QuantumStrategy.cooperate())["first"]
         entanglement_sweep = sweep(
             "entanglement",
@@ -168,18 +176,22 @@ class QuantumPrisonersDilemma(Model):
             f"Chosen profile {first.name} vs {second.name}: quantum payoffs "
             f"({payoffs['first']:.2f}, {payoffs['second']:.2f}) against {classical_note} "
             f"({classical_payoffs[0]:.2f}, {classical_payoffs[1]:.2f}).",
-            f"With maximal entanglement the classical temptation disappears: a player who defects while the "
-            f"other cooperates receives {defector_value:.3f} instead of the classical 5, so the entangling "
-            f"context removes the reason to defect against a cooperator.",
-            f"Against a Q-playing partner the best-response scan over the full two-parameter strategy family "
-            f"finds a payoff of {best['best']['payoff']:.3f} (at theta = {best['best']['theta']:.2f}, "
-            f"phi = {best['best']['phi']:.2f}), while Q against Q yields {cooperative_value:.3f}. The library "
-            "reports the scan rather than asserting that Q is a Nash equilibrium, because that claim depends "
-            "on which strategy space the players are allowed to use - still an open point in the quantum-games "
-            "literature, and the model's caveats say so.",
+            f"Defecting against a cooperator pays {defector_value:.3f} at entanglement "
+            f"{game.entanglement:.2f} rad, against the classical 5.000: the entangling context is what "
+            f"removes the temptation, and at entanglement 0 the two coincide.",
+            f"Against the strategy in play ({second.name}) the best reply in the full two-parameter family "
+            f"U(theta, phi) is worth {best['best']['payoff']:.3f} (at theta = {best['best']['theta']:.2f}, "
+            f"phi = {best['best']['phi']:.2f}), while mutual cooperation is worth {cooperative_value:.3f}. "
+            + (
+                "No deviation pays, so cooperation is the best reply to cooperation here."
+                if best["best"]["payoff"] <= cooperative_value + 1e-9
+                else "A deviation pays more than cooperating at this entanglement, so the dilemma is still "
+                "open - raise the entanglement to close it."
+            ),
             f"Classical analysis: {classical.nash_equilibrium()['comment']}",
-            f"Sweeping the entanglement shows the cooperation rate rising from 0 (classical game) to 1 "
-            f"(maximal entanglement); decoherence undoes it, returning the model to the classical prediction.",
+            "Sweeping the entanglement shows the temptation to defect falling from the classical 5.000 to "
+            "0.000, which is what makes mutual cooperation stable; sweeping the decoherence undoes that, "
+            "returning the model to the classical prediction.",
         ]
         summary = (
             f"{first.name} vs {second.name}: payoffs ({payoffs['first']:.2f}, {payoffs['second']:.2f}), "
@@ -199,27 +211,31 @@ class QuantumPrisonersDilemma(Model):
     def context_metadata(self, context: dict) -> dict:
         return {
             "entanglement_radians": context["game"].entanglement,
-            "strategy_family": "U(theta, phi) with Q = U(0, pi/2)",
+            "strategy_family": "U(theta, phi) with C = I, D = U(pi, 0), Q = U(pi/2, 0)",
+            "entangler": "x-x (J = exp(i gamma/2 X x X)); it leaves the phase strategies alone and "
+            "punishes defection against a cooperator",
         }
 
 def _pd_metrics(context: dict, game: QuantumGame, value: float = 0.0, noise: bool = False) -> dict:
-    """Cooperation rate and payoffs as entanglement or noise is varied."""
+    """Cooperation, the temptation to defect and the classical value, as a parameter is varied.
+
+    The temptation - what a player gets by defecting on a cooperator - is the quantity the
+    entangler moves, so it is what a sweep has to show: it falls from the classical 5 to 0.
+    """
     changed = QuantumGame(
         context["game"].payoff_matrix,
         entanglement=value if not noise else game.entanglement,
         noise=value if noise else 0.0,
     )
-    first = QuantumStrategy.quantum()
-    second = QuantumStrategy.quantum()
+    first = QuantumStrategy.cooperate()
+    second = QuantumStrategy.cooperate()
     payoffs = changed.expected_payoffs(first, second)
-    classical = classical_value = changed.expected_payoffs(
-        QuantumStrategy.defect(), QuantumStrategy.defect()
-    )
+    temptation = changed.expected_payoffs(QuantumStrategy.defect(), QuantumStrategy.cooperate())
     return {
         "cooperation": payoffs["cooperation"],
-        "quantum payoff": payoffs["first"],
-        "classical (D,D) payoff": classical_value["first"],
-        "quantum advantage": payoffs["first"] - classical_value["first"],
+        "cooperative payoff": payoffs["first"],
+        "temptation to defect": temptation["first"],
+        "gain from cooperating": payoffs["first"] - temptation["first"],
     }
 
 
@@ -314,7 +330,10 @@ class NegotiationTrust(Model):
         context_sweep = sweep(
             "shared_context",
             [round(value, 3) for value in np.linspace(0.0, PI / 2, 11)],
-            lambda value: _negotiation_metrics(context, float(value), 0.0),
+            # the model's own suspicion, so the chart describes the run it sits beside
+            lambda value: _negotiation_metrics(
+                context, float(value), float(context["parameters"]["suspicion"])
+            ),
         )
         suspicion_sweep = sweep(
             "suspicion",
@@ -326,8 +345,11 @@ class NegotiationTrust(Model):
             f"{commitment:.3f}.",
             f"Expected payoffs ({payoffs['first']:.2f}, {payoffs['second']:.2f}) against the classical mixed "
             f"equilibrium, which hedges with probability {classical.prediction['hedging probability']:.2f}.",
-            "The shared-context sweep is monotone: with no shared context both parties hedge, and with maximal "
-            "context the profitable commitment is reached without any communication.",
+            f"Sharing a context moves what hedging against a committer pays: "
+            f"{_negotiation_metrics(context, 0.0, 0.0)['hedging against commitment']:.3f} with no shared "
+            f"context, {_negotiation_metrics(context, PI / 2, 0.0)['hedging against commitment']:.3f} with "
+            f"maximal context, against a commitment payoff of 4.000. The entangler is what makes committing "
+            f"safe rather than a gamble.",
             "Suspicion (decoherence) is the interesting failure mode: it removes the correlation the agreement "
             "relied on while leaving the payoffs untouched.",
         ]
@@ -361,10 +383,16 @@ def _negotiation_metrics(context: dict, shared_context: float, suspicion: float)
     moves = game.outcome_distribution(first, second)
     agreement = moves.get(("C", "C"), 0.0)
     payoffs = game.expected_payoffs(first, second)
+    # what a hedger earns against a committer is the quantity the shared context moves: it is
+    # 3 classically (the risk of being exploited sits with the committer) and 0 at full context
+    hedge = QuantumStrategy("hedge", float(np.pi), 0.0)
+    commitment = QuantumStrategy("commit", 0.0, 0.0)
+    hedging = game.expected_payoffs(hedge, commitment)["first"]
     return {
         "agreement": agreement,
         "first payoff": payoffs["first"],
         "commitment": sum(value for (own, opponent), value in moves.items() if own == "C"),
+        "hedging against commitment": hedging,
     }
 
 class EvolutionOfCooperation(Model):
@@ -504,18 +532,20 @@ class EvolutionOfCooperation(Model):
             f"Starting from {context['parameters']['start']}, the population ends at C = {final[0]:.3f}, "
             f"D = {final[1]:.3f}, Q = {final[2]:.3f}; with the classical payoff matrix it ends at "
             f"C = {classical_final[0]:.3f}, D = {classical_final[1]:.3f}, Q = {classical_final[2]:.3f}.",
-            f"With no entanglement defection takes over ({1 - cooperation:.3f} of the population defects), "
-            f"which is exactly what the classical analysis predicts.",
+            f"With the classical payoff matrix, which is what no entanglement gives, defection takes over "
+            f"({classical_final[1]:.3f} of the population defects); here, with entanglement "
+            f"{context['game'].entanglement:.2f} rad, {1 - cooperation:.3f} of it does.",
             f"Cooperative play (C or Q) reaches {cooperation:.3f} of the population here"
             + (
                 f", and the sweep puts the transition at about gamma = {threshold:.2f} rad."
                 if threshold is not None
                 else "; the entanglement sweep shows where that share crosses one half."
             ),
-            "The surviving cooperative strategy is classical C, not Q: in this convention a defector can still "
-            "exploit a Q player, so evolution selects the strategy that is not exploitable even though Q is the "
-            "strategy that makes mutual cooperation the payoff-dominant outcome. The sweep shows which "
-            "strategy wins as a function of the entanglement, rather than assuming one.",
+            "The surviving cooperative strategy is classical C, not Q. In this convention C against Q pays 4.0 "
+            "while Q against C pays 1.5, so C invades a population of Q players; and C against C pays 3.0 while "
+            "defecting against C pays 0.0, so C cannot be invaded either. Evolution selects the strategy that is "
+            "both the best reply to itself and unprofitable to defect against, which is the same statement the "
+            "prisoner's dilemma model makes about cooperation being stable.",
             "Mutation prevents fixation, so a cooperating population is never permanently safe.",
         ]
         summary = (
@@ -861,10 +891,13 @@ class CoordinationGames(Model):
         findings = [
             f"Probability that both players choose the same convention: {agreement:.3f}, against the classical "
             f"mixed equilibrium's 0.5 (expected payoff {payoffs['first']:.2f} versus 1.00).",
-            "With no shared context the model reproduces the classical 0.5 exactly, which is the sanity check "
-            "for the whole construction.",
-            "The shared-context sweep rises to perfect coordination: the players never communicate, they simply "
-            "share a context.",
+            "The shared context does not change this probability: a matched pair of strategies is left alone by "
+            "the entangler, and the coordination probability is 1.000 with no shared context as well. The "
+            "context is part of the shared game machinery and is what the prisoner's dilemma model uses to "
+            "remove the temptation to defect; here the efficient convention is reachable without it.",
+            "What the construction does show is that the efficient convention is reached at all: the classical "
+            "mixed equilibrium, which is what a risk-neutral analysis of this matrix recommends, coordinates "
+            "only half the time and pays 1.00 against the 2.00 here.",
             "Decoherence is the failure mode to watch: losing the shared context returns the game to the "
             "classical coin-flip, smoothly and without a threshold.",
         ]

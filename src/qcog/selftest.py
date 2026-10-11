@@ -155,16 +155,25 @@ def run_evidence() -> list[dict]:
         )
     )
 
-    # 9. the quantum prisoner's dilemma reproduces the EWL equilibrium
+    # 9. the quantum prisoner's dilemma: at maximal entanglement defecting on a cooperator is
+    #    punished, which is what makes mutual cooperation the stable outcome.  (This is the EWL
+    #    claim, stated as the entangler does it: the cooperation strategy is the classical C,
+    #    and the phase strategy Q keeps the classical temptation, so Q is not the equilibrium.)
     game = QuantumGame(ClassicalPrisonersDilemma().payoff_matrix(), entanglement=np.pi / 2)
-    quantum = QuantumStrategy.quantum()
-    cooperative = game.expected_payoffs(quantum, quantum)["first"]
+    cooperate = QuantumStrategy.cooperate()
+    cooperative = game.expected_payoffs(cooperate, cooperate)["first"]
+    temptation = game.expected_payoffs(QuantumStrategy.defect(), cooperate)["first"]
     mutual_defection = game.expected_payoffs(QuantumStrategy.defect(), QuantumStrategy.defect())["first"]
+    best = game.best_response(cooperate, grid=21)["best"]
     rows.append(
         _row(
-            "maximal entanglement makes mutual Q the payoff-dominant outcome",
-            abs(cooperative - 3.0) < 1e-9 and abs(mutual_defection - 1.0) < 1e-9,
-            f"(Q,Q) = {cooperative:.3f}, (D,D) = {mutual_defection:.3f}",
+            "maximal entanglement removes the temptation to defect on a cooperator",
+            abs(cooperative - 3.0) < 1e-9
+            and temptation < 1e-6
+            and abs(mutual_defection - 1.0) < 1e-9
+            and abs(best["payoff"] - cooperative) < 1e-6,
+            f"(C,C) = {cooperative:.3f}, defecting on C = {temptation:.3f}, (D,D) = {mutual_defection:.3f}, "
+            f"best reply to C = {best['payoff']:.3f}",
         )
     )
     defector = game.expected_payoffs(QuantumStrategy.defect(), QuantumStrategy.cooperate())["first"]

@@ -1,6 +1,16 @@
 """Q-Cog in five minutes: a belief state, two questions, two orders.
 
-Run it with ``python demos/examples/01_first_steps.py``.
+Run it with ``python demos/examples/01_first_steps.py``. Nothing here needs a network connection or
+an account.
+
+A respondent has an attitude you cannot see. You ask them one question, then a second, related one -
+and then you ask the same two questions in the opposite order to somebody else. A classical account
+says the order cannot matter: both answers come out of one joint distribution, so the marginal of the
+first question is fixed. This script builds that situation and prints, in order: the two question
+orders, the size of the order effect and why it happens, where the probability of the second answer
+comes from (a classical part and an interference part), the parameter-free QQ equality, what a
+classical model would have had to say about the same data, and finally the same design run on a
+compiled Qiskit circuit with shot noise.
 """
 
 from __future__ import annotations
@@ -33,18 +43,21 @@ forward = run_sequence(belief, [question_a, question_b])
 backward = run_sequence(belief, [question_b, question_a])
 
 report = order_effect(forward, backward, "A", "B")
+print("The order effect")
 print(report.summary())
 print(explain_order_effect(report))
 print()
 
 # 4. Where does p(B) come from?  Split it into a classical part and interference.
 interference = interference_decomposition(belief, question_a, question_b)
+print("Where the probability comes from")
 print(interference.summary())
 print("decomposition is exact:", interference.check())
 print()
 
 # 5. The parameter-free prediction: same-answer agreement is order independent.
 qq = qq_equality(forward, backward, "A", "B")
+print("The parameter-free prediction (QQ equality)")
 print(qq.summary())
 print()
 
