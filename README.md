@@ -463,6 +463,7 @@ One naming rule: a model parameter must not be called `noise`, because that name
   equilibrium claim that depends on which strategy space is assumed.
 
 ## Licence and attribution
+This effort is supported by Qollab & IonQ.
 
 MIT - see [`LICENSE`](LICENSE). Code, documentation and figures are released under the same licence, and every
 external dependency is MIT/BSD/Apache licensed. Suggested citation: [`CITATION.cff`](CITATION.cff).
