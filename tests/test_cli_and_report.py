@@ -49,8 +49,26 @@ def test_cli_sweep_and_evidence(capsys):
 
 
 def test_cli_rejects_unknown_model(capsys):
-    with pytest.raises(KeyError):
-        main(["run", "nope"])
+    assert main(["run", "nope"]) == 2
+    assert "nope" in capsys.readouterr().err
+
+
+def test_a_user_error_is_a_message_rather_than_a_traceback(capsys):
+    """A misspelled backend, parameter or file is a message, not a stack trace."""
+    assert main(["run", "question-order", "--backend", "nonsense"]) == 2
+    error = capsys.readouterr().err
+    assert "unknown backend" in error and "Traceback" not in error
+    assert main(["run", "question-order", "--param", "not_a_parameter=1"]) == 2
+    assert "not_a_parameter" in capsys.readouterr().err
+
+
+def test_cli_fit_reads_the_dataset_the_library_ships(capsys):
+    """``qcog fit`` has to cope with the bundle in ``qcog/data``, not only with a flat mapping."""
+    data = Path(__file__).resolve().parents[1] / "src" / "qcog" / "data" / "benchmarks.json"
+    assert data.exists()
+    assert main(["fit", "question-order", str(data)]) == 0
+    output = capsys.readouterr().out
+    assert "fitted" in output.lower() and "response" in output
 
 
 def test_cli_prints_the_classical_comparison(capsys):

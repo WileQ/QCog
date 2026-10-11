@@ -245,6 +245,54 @@ def cmd_sweep(slug: str, overrides: list[str]) -> int:
     return 0
 
 
+def _is_dataset(value) -> bool:
+    """True for a dataset object: a mapping that carries its own frequencies."""
+    return isinstance(value, dict) and any(isinstance(value.get(key), dict) for key in ("frequencies", "observed"))
+
+
+def _frequencies_from_json(payload, slug: str, name: str) -> dict[str, float]:
+    """The observed response frequencies in a JSON file, or a clear reason why there are none.
+
+    Three shapes are accepted, because all three are things a person actually has: a flat
+    ``{response: frequency}`` mapping, one dataset object with a ``frequencies`` (or ``observed``)
+    mapping inside it, and a bundle of such datasets - which is what ``qcog/data/benchmarks.json``
+    ships - in which case the dataset whose name matches the model is used, or the only one.
+    """
+    if not isinstance(payload, dict) or not payload:
+        raise SystemExit(f"{name} does not contain a set of response frequencies")
+    if _is_dataset(payload):
+        dataset, chosen = payload, name
+    else:
+        datasets = {key: value for key, value in payload.items() if _is_dataset(value)}
+        if not datasets:
+            dataset, chosen = payload, name
+        else:
+            wanted = slug.replace("-", "_")
+            match = next((key for key in sorted(datasets) if wanted in key.replace("-", "_")), None)
+            if match is None and len(datasets) == 1:
+                match = next(iter(datasets))
+            if match is None:
+                raise SystemExit(
+                    f"{name} holds several datasets ({', '.join(sorted(datasets))}); pass a file with a "
+                    "single set of response frequencies"
+                )
+            dataset, chosen = datasets[match], f"{name} ({match})"
+    frequencies = dataset.get("frequencies") or dataset.get("observed") or dataset
+    if not isinstance(frequencies, dict):
+        raise SystemExit(f"{chosen} does not contain a set of response frequencies")
+    observed: dict[str, float] = {}
+    for key, value in frequencies.items():
+        try:
+            observed[str(key)] = float(value)
+        except (TypeError, ValueError):
+            raise SystemExit(
+                f"{chosen}: {key!r} is not a number, so this is not a table of response frequencies"
+            ) from None
+    if not observed:
+        raise SystemExit(f"{chosen} contains no response frequencies")
+    return observed
+
+
 def cmd_fit(slug: str, data_path: str, overrides: list[str]) -> int:
     """Fit a model to observed frequencies."""
     from .core.fitting import fit
@@ -254,7 +302,7 @@ def cmd_fit(slug: str, data_path: str, overrides: list[str]) -> int:
     if not path.exists():
         raise SystemExit(f"data file {data_path} not found")
     if path.suffix.lower() == ".json":
-        observed = json.loads(path.read_text(encoding="utf-8"))
+        observed = _frequencies_from_json(json.loads(path.read_text(encoding="utf-8")), slug, path.name)
     else:
         observed = {}
         for line in path.read_text(encoding="utf-8").splitlines():
@@ -321,6 +369,18 @@ def main(argv: list[str] | None = None) -> int:
         if args.command is None and not getattr(args, "version", False):
             parser.print_help()
         return 0
+    try:
+        return _dispatch(parser, args)
+    except SystemExit:
+        raise
+    except (ValueError, KeyError, TypeError, FileNotFoundError, OSError) as error:
+        # a typo in a backend name, a parameter or a file path is a message, not a traceback
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+
+
+def _dispatch(parser, args) -> int:
+    """Run the command the parser selected."""
     if args.command == "list":
         return cmd_list()
     if args.command == "info":
