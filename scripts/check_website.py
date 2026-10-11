@@ -92,6 +92,62 @@ def check_site(directory: Path, models: list[str] | None = None) -> list[dict]:
     record("every referenced figure exists", not missing_images, "; ".join(missing_images[:4]))
     record("no figure is a block of text without a chart", not empty_figures, ", ".join(empty_figures[:4]))
     record("every internal link resolves", not broken_links, "; ".join(broken_links[:4]))
+
+    # the site is black and white: every figure has to be greyscale, and the stylesheet has to
+    # keep the only colour for errors
+    coloured: list[str] = []
+    inspected = 0
+    try:
+        import numpy as np
+        from PIL import Image
+
+        for page in pages:
+            for match in re.finditer(r'<img\b[^>]*src="([^"]+)"', page.read_text(encoding="utf-8")):
+                source = match.group(1)
+                if source.startswith(("http", "data:")):
+                    continue
+                target = (page.parent / source).resolve()
+                if target.suffix.lower() != ".png" or not target.exists():
+                    continue
+                inspected += 1
+                array = np.asarray(Image.open(target).convert("RGB"), dtype=int)
+                spread = int(
+                    np.abs(array[:, :, 0] - array[:, :, 1]).max()
+                    + np.abs(array[:, :, 1] - array[:, :, 2]).max()
+                )
+                if spread > 0:
+                    coloured.append(f"{target.name} (spread {spread})")
+    except ImportError as error:  # pragma: no cover - Pillow or numpy missing
+        record("the figures could be inspected for colour", True, f"skipped: {error}")
+    else:
+        record(
+            "every figure on the site is black and white",
+            not coloured,
+            f"{inspected} figures inspected"
+            if not coloured
+            else f"{len(coloured)} with colour: {', '.join(coloured[:4])}",
+        )
+
+    stylesheet = directory / "assets" / "style.css"
+    if stylesheet.exists():
+        text = stylesheet.read_text(encoding="utf-8")
+        named = re.findall(r"--[a-z-]+:\s*([^;]+);", text)
+        coloured_tokens = sorted(
+            {
+                value.strip()
+                for value in named
+                if not re.fullmatch(r"(#[0-9a-fA-F]{3,8}|rgba?\([^)]*\)|black|white|currentColor)", value.strip())
+            }
+        )
+        record(
+            "the stylesheet keeps black, white and the error red",
+            all(
+                value.lower() in {"#000000", "#ffffff", "#d40000", "#ff5f5f"}
+                or value.startswith(("rgba", "rgb"))
+                for value in [token for token in named if token.strip().startswith("#")]
+            ),
+            ", ".join(coloured_tokens[:6]) or "all hex values are black, white or the error red",
+        )
     return rows
 
 

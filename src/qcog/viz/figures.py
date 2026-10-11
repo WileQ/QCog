@@ -15,7 +15,15 @@ from typing import Iterable, Mapping, Sequence
 import numpy as np
 from pandas.api.types import is_bool_dtype, is_numeric_dtype
 
-from .style import PALETTE, annotate_figure, color_for, new_figure, series_style
+from .style import (
+    PALETTE,
+    annotate_figure,
+    bar_style,
+    color_for,
+    new_figure,
+    sequential_cmap,
+    series_style,
+)
 
 
 def _is_number(column) -> bool:
@@ -110,10 +118,8 @@ def marginal_bars(result, title: str | None = None):
                 subset["probability"],
                 width=width,
                 label=question,
-                color=color_for(position),
-                hatch=(None if position == 0 else "//"),
-                edgecolor="white",
                 linewidth=0.6,
+                **bar_style(position, hatch=(None if position == 0 else "//"), edge_color="white"),
             )
             for index, value in enumerate(subset["probability"]):
                 axis.text(index + position * width, value + 0.02, f"{value:.2f}", ha="center", fontsize=8)
@@ -130,7 +136,7 @@ def marginal_bars(result, title: str | None = None):
             subset = frame[frame["question"] == question]
             labels = list(subset["outcome"])
             values = list(subset["probability"])
-            axis.barh(list(range(len(labels)))[::-1], values, color=color_for(position))
+            axis.barh(list(range(len(labels)))[::-1], values, **bar_style(position))
             for index, value in enumerate(values):
                 axis.text(value + 0.02, len(labels) - 1 - index, f"{value:.2f}", va="center", fontsize=8)
             axis.set_yticks(list(range(len(labels)))[::-1])
@@ -160,10 +166,8 @@ def order_effect_figure(report, title: str | None = None):
     figure = new_figure(5.6, 3.4)
     axis = figure.add_subplot(111)
     positions = np.arange(len(outcomes))
-    axis.bar(positions - 0.19, first, width=0.38, color=PALETTE["blue"],
-             label=f"{report.first} asked first")
-    axis.bar(positions + 0.19, second, width=0.38, color=PALETTE["orange"],
-             label=f"{report.first} asked second")
+    axis.bar(positions - 0.19, first, width=0.38, **bar_style(0), label=f"{report.first} asked first")
+    axis.bar(positions + 0.19, second, width=0.38, **bar_style(1), label=f"{report.first} asked second")
     for position, (left, right) in enumerate(zip(first, second)):
         axis.text(position, max(left, right) + 0.02, f"{right - left:+.3f}", ha="center", fontsize=8)
     axis.set_xticks(positions)
@@ -195,9 +199,8 @@ def interference_figure(report, title: str | None = None):
     figure = new_figure(5.8, 3.4)
     axis = figure.add_subplot(111)
     positions = np.arange(len(outcomes))
-    axis.bar(positions, direct, color=PALETTE["blue"], label="classical contribution")
-    axis.bar(positions, interference, bottom=direct, color=PALETTE["vermillion"],
-             label="interference contribution")
+    axis.bar(positions, direct, **bar_style(0), label="classical contribution")
+    axis.bar(positions, interference, bottom=direct, **bar_style(1), label="interference contribution")
     axis.axhline(0.0, color="#333333", linewidth=1)
     for position, outcome in enumerate(outcomes):
         axis.text(position, report.totals[outcome] + 0.02, f"{report.totals[outcome]:.3f}",
@@ -293,10 +296,9 @@ def histogram_figure(spec: Mapping, title: str | None = None):
     width = 0.8 / max(len(series), 1)
     positions = np.arange(len(spec["x"]))
     for index, (label, values) in enumerate(series):
-        style = series_style(index)
         axis.bar(
-            positions + index * width, values, width=width, label=label,
-            color=style["color"], hatch=("//" if index % 2 else None), edgecolor="white", linewidth=0.6,
+            positions + index * width, values, width=width, label=label, linewidth=0.6,
+            **bar_style(index, hatch=("//" if index % 2 else None), edge_color="white"),
         )
     axis.set_xticks(positions + width * (len(series) - 1) / 2)
     axis.set_xticklabels([str(value) for value in spec["x"]])
@@ -403,7 +405,7 @@ def heatmap_figure(
         grid[rows.index(entry[row_column]), columns.index(entry[column_column])] = entry[column]
     figure = new_figure(1.5 + 0.8 * len(columns), 1.6 + 0.6 * len(rows))
     axis = figure.add_subplot(111)
-    image = axis.imshow(grid, cmap="viridis")
+    image = axis.imshow(grid, cmap=sequential_cmap())
     axis.set_xticks(range(len(columns)))
     axis.set_xticklabels(columns, rotation=20, ha="right")
     axis.set_yticks(range(len(rows)))
@@ -497,7 +499,7 @@ def payoff_table_figure(
         start=1,
     ):
         axis = figure.add_subplot(1, 2, position)
-        image = axis.imshow(grid, cmap="viridis", vmin=low, vmax=high)
+        image = axis.imshow(grid, cmap=sequential_cmap(), vmin=low, vmax=high)
         axis.set_xticks(range(len(columns)))
         axis.set_xticklabels(columns, rotation=20, ha="right")
         axis.set_yticks(range(len(rows)))

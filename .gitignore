@@ -23,7 +23,8 @@ Thumbs.db
 
 # the generated static website: built by scripts/build_website.py and published from
 # .github/workflows/pages.yml, so the generated HTML and its figures are not committed
-website/
+# (only the output directory at the repository root - src/qcog/website/ is package code)
+/website/
 
 # the model tests write their figures, their per-model reports and their summary here; the suite
 # regenerates all of it in about a minute
