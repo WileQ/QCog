@@ -656,10 +656,21 @@ class AssociativeMemory(OrderBasedModel):
         recall = measurement_for(parameters["recall_angle"], "recall", ("yes", "no"), "recall question")
         return TwoQuestionExperiment(trace, cue, recall, labels={"state": "trace", "a": "cue", "b": "recall"})
 
+    def _framing(self, context: dict) -> str:
+        """Which narrative this run reports (the design is the same either way)."""
+        return str(context["parameters"].get("mode", "competing cues"))
+
     def extra_findings(self, context: dict, results: dict, bundle) -> list[str]:
         forward = results["A_then_B"]
         cue_first = forward.conditional("recall", {"cue": "yes"})["yes"]
         cue_absent = forward.marginal("recall")["yes"]
+        if self._framing(context) == "single cue":
+            return [
+                f"With one cue, recall is {cue_first:.3f} against {cue_absent:.3f} unconditionally: the cue "
+                "moves recall, and that is all a single retrieval path can say.",
+                "The competing-cue framing reports the same numbers as interference between two retrieval "
+                "paths; switch mode to 'competing cues' to read them that way.",
+            ]
         return [
             f"Recall probability with the cue answered 'yes' is {cue_first:.3f}, against {cue_absent:.3f} "
             "unconditionally: the cue moves recall.",
@@ -670,9 +681,16 @@ class AssociativeMemory(OrderBasedModel):
 
     def extra_summary(self, context: dict, results: dict, bundle) -> str:
         forward = results["A_then_B"]
+        cue_first = forward.conditional("recall", {"cue": "yes"})["yes"]
+        cue_absent = forward.marginal("recall")["yes"]
+        if self._framing(context) == "single cue":
+            return (
+                f"Single retrieval cue: recall {cue_first:.3f} with the cue, {cue_absent:.3f} without; the "
+                "competing-cue reading of the same run is available as another mode."
+            )
         return (
-            f"Cue-based recall {forward.conditional('recall', {'cue': 'yes'})['yes']:.3f} versus "
-            f"{forward.marginal('recall')['yes']:.3f} unconditionally; cue similarity drives the interference."
+            f"Competing cues: recall {cue_first:.3f} with the cue versus {cue_absent:.3f} unconditionally; "
+            "cue similarity drives the interference."
         )
 
     #: Sweeping the cue angle is the most informative single picture of this model.

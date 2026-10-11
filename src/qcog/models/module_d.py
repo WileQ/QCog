@@ -98,7 +98,9 @@ class QuantumOpinionDynamics(PopulationModel):
                   "Population size. The simulation is dense (2^n amplitudes), so 8 is the practical "
                   "interactive limit; the classical baselines cover larger networks.",
                   2, 8),
-        ParamSpec("topology", "choice", "ring", "Network topology", "Who talks to whom.",
+        ParamSpec("topology", "choice", "ring", "Network topology",
+                  "Which network the agents sit on - a ring, a line, a complete graph, a star, two "
+                  "communities or a random graph - and therefore who can influence whom.",
                   choices=("ring", "line", "complete", "star", "two-communities", "random")),
         ParamSpec("initial_spread", "float", 1.0, "Initial diversity",
                   "How far apart the agents' initial opinions are.", 0.0, 1.4),
@@ -773,8 +775,6 @@ class InformationCascades(Model):
         }
 
     def simulate(self, context: dict, engine) -> dict:
-        from ..core.engine import run_sequence
-
         parameters = context["parameters"]
         count = int(parameters["num_agents"])
         order = parameters["order"]
@@ -797,8 +797,8 @@ class InformationCascades(Model):
             group = measurement_for(PI / 2 + social, "social context", ("crowd adopts", "crowd rejects"),
                                     "the observed behaviour of the group")
             questions = [signal, group] if order == "signal first" else [group, signal]
-            result = run_sequence(state, questions)
-            alone = run_sequence(
+            result = engine.run(state, questions)
+            alone = engine.run(
                 amplitudes(np.cos(angle / 2), np.exp(1j * float(parameters["phase"])) * np.sin(angle / 2)),
                 [signal],
             )
@@ -830,7 +830,7 @@ class InformationCascades(Model):
                 "cascade start": cascade_start,
                 "classical posterior": classical["posterior"],
             },
-            "final_state": run_sequence(
+            "final_state": engine.run(
                 amplitudes(np.cos(context["signal_angle"] / 2),
                             np.exp(1j * float(parameters["phase"])) * np.sin(context["signal_angle"] / 2)),
                 [measurement_for(context["signal_angle"], "private signal", ("supportive", "against"))],
@@ -929,8 +929,10 @@ def _cascade_metrics(context: dict, social_pressure: float) -> dict:
     """Adoption share and cascade onset as social pressure is varied."""
     parameters = dict(context["parameters"])
     parameters["social_pressure"] = social_pressure
+    from ..core.engine import Engine
+
     rebuilt = InformationCascades().build(**parameters)
-    outcome = InformationCascades().simulate(rebuilt, None)
+    outcome = InformationCascades().simulate(rebuilt, Engine(backend="exact"))
     summary = outcome["summary"]
     return {
         "adoptions": summary["adoptions"],

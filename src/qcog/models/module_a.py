@@ -278,10 +278,7 @@ class QuestionOrder(Model):
         sharpness_sweep = sweep(
             "sharpness",
             [round(value, 2) for value in np.linspace(0.05, 1.0, 11)],
-            lambda value: {
-                "order effect": _order_effect_at(context, float(value), "sharpness"),
-                "interference": _interference_magnitude(context["state"], context["first"], context["second"]),
-            },
+            lambda value: _sharpness_metrics(context, float(value)),
         )
         decoherence_sweep = sweep(
             "decoherence",
@@ -339,8 +336,34 @@ class QuestionOrder(Model):
         return {"incompatibility": round(context["experiment"].incompatibility, 6)}
 
 
+def _sharpness_metrics(context: dict, sharpness: float) -> dict:
+    """Order effect and interference for the design the ``sharpness`` parameter actually builds.
+
+    Both numbers come from the same experiment the run uses - the first question stays sharp and
+    the second is diluted towards an uninformative question - so the sweep describes the parameter
+    rather than a different design, and the two curves fall to zero together.
+    """
+    from ..core.engine import Engine
+
+    state = context["state"]
+    first = measurement_for(
+        context["first"].metadata["theta"], context["first"].name, context["first"].outcomes,
+        "first question",
+    )
+    second = measurement_for(
+        context["second"].metadata["theta"], context["second"].name, context["second"].outcomes,
+        "second question", sharpness=sharpness,
+    )
+    results = TwoQuestionExperiment(state, first, second).run_both_orders(Engine(backend="exact"))
+    report = order_effect(results["A_then_B"], results["B_then_A"], first.name, second.name)
+    return {
+        "order effect": float(report.max_marginal_shift()),
+        "interference": _interference_magnitude(state, first, second),
+    }
+
+
 def _order_effect_at(context: dict, value: float, kind: str) -> float:
-    """Order-effect size at a given sharpness or decoherence level (used by sweeps)."""
+    """Order-effect size at a given decoherence level (used by the decoherence sweep)."""
     from ..core.engine import Engine
 
     if kind == "sharpness":
@@ -732,7 +755,9 @@ class BeliefRevision(Model):
     def analyse(self, context: dict, results: dict) -> tuple[dict, list[str], str]:
         prior, evidence = context["prior"], context["evidence"]
         framed = prior.evolve(context["framing"])
-        trajectories = _accumulation_trajectories(prior, framed, evidence, 8)
+        trajectories = _accumulation_trajectories(
+            prior, framed, evidence, int(context["parameters"]["repetitions"])
+        )
         shift = float(
             results["framed_evidence"].marginal("evidence")["supports"]
             - results["evidence_first"].marginal("evidence")["supports"]

@@ -130,6 +130,9 @@ def make_engine(
     **options,
 ) -> Engine:
     """Build an :class:`~qcog.core.engine.Engine` from plain arguments."""
+    from ..backends import get_backend
+
+    get_backend(backend)  # refuse a misspelled backend now, rather than recording it and ignoring it
     if backend in {"sampled", "aer"} and not shots:
         shots = 4096
     return Engine(backend=backend, shots=shots, seed=seed, noise=noise, options=options)
@@ -908,11 +911,37 @@ class Model(CircuitAndComparisonMixin, ABC):
         """
         engine_kwargs = {key: kwargs.pop(key) for key in list(kwargs) if key in RESERVED}
         parameters = coerce_params(self.params, kwargs)
+        # A model can declare the decoherence its parameters imply (``_noise``, which
+        # ``predict`` already uses).  Without this the run would simulate the noiseless
+        # circuit while the model's own sweep of that same parameter showed the noisy one.
+        declared_noise = getattr(self, "_noise", None)
+        if declared_noise is not None and "engine" not in engine_kwargs and "noise" not in engine_kwargs:
+            engine_kwargs["noise"] = declared_noise(dict(parameters))
         engine = engine_kwargs.pop("engine", None) or make_engine(
             **{key: value for key, value in engine_kwargs.items() if key != "sweeps"}
         )
         context = self.build(**parameters)
+        if isinstance(context, dict):
+            # the parameters belong to the context, the way OrderBasedModel already passes
+            # them, so that analyse() can honour the ones it did not get as a table
+            context.setdefault("parameters", parameters)
         results = self.simulate(context, engine)
+        # Some simulations are analytic by construction - a density matrix over a whole
+        # population, a joint distribution read off a diagonal - and never touch a backend, so
+        # ``shots`` would otherwise be recorded and ignored.  Sampling those distributions here
+        # makes the flag mean the same thing for every model.
+        if engine.shots:
+            from ..backends.exact import SampledBackend
+
+            sampler = SampledBackend()
+            results = {
+                key: (
+                    sampler.resample(value, engine.shots, seed=engine.seed)
+                    if isinstance(value, SequentialResult) and not value.shots
+                    else value
+                )
+                for key, value in results.items()
+            }
         from ..analysis.sweeps import suppress_sweeps
 
         with suppress_sweeps(not engine_kwargs.get("sweeps", True)):
@@ -931,6 +960,20 @@ class Model(CircuitAndComparisonMixin, ABC):
             "module_title": self.module_title(),
         }
         metadata.update(self.context_metadata(context))
+        # A model whose simulation is analytic by construction (a population density matrix, an
+        # aggregate vote count) has nothing to sample.  Say so instead of reporting a backend
+        # that never ran.
+        sampled = any(
+            isinstance(value, SequentialResult) and value.shots == engine.shots for value in results.values()
+        )
+        recorded_backend = engine.backend
+        recorded_shots = engine.shots
+        if engine.shots and not sampled:
+            recorded_backend, recorded_shots = "exact", None
+            metadata["backend_note"] = (
+                f"this simulation is evaluated analytically, so the requested backend "
+                f"{engine.backend!r} with {engine.shots} shots did not run; the results are exact"
+            )
         result = ModelResult(
             slug=self.slug,
             title=self.title,
@@ -942,8 +985,8 @@ class Model(CircuitAndComparisonMixin, ABC):
             findings=findings,
             caveats=list(self.caveats),
             references=list(self.references),
-            backend=engine.backend,
-            shots=engine.shots,
+            backend=recorded_backend,
+            shots=recorded_shots,
             seed=engine.seed,
             metadata=metadata,
         )
