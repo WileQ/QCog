@@ -8,6 +8,7 @@ website workflow runs that same check on the site it deploys).
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -59,7 +60,7 @@ print("hello")
 def test_markdown_never_crashes_on_the_project_documentation():
     from qcog.website import to_html
 
-    files = [ROOT / "README.md", ROOT / "CONTRIBUTING.md", ROOT / "ATTRIBUTION.md"]
+    files = [ROOT / "README.md", ROOT / "CONTRIBUTING.md"]
     files += sorted((ROOT / "docs").glob("*.md"))
     files += [ROOT / "studies" / "quantum_advantage" / "REPORT.md"]
     for path in files:
@@ -87,6 +88,28 @@ def test_a_small_site_builds_with_every_property(tmp_path):
     assert html.count("<img") == html.count("alt=")
     assert "Model versus classical baseline" in html
     assert "circuit" in html.lower()
+
+
+def test_the_notebook_page_names_the_notebook_relatively(tmp_path):
+    """The published site must never print the build machine's absolute paths."""
+    from qcog.website import build_site
+
+    build_site(
+        tmp_path,
+        root=ROOT,
+        models=[],
+        include_examples=False,
+        include_notebook=True,
+        include_study=False,
+        include_docs=False,
+    )
+    page = tmp_path / "notebook.html"
+    assert page.exists()
+    html = page.read_text(encoding="utf-8")
+    assert "demos/quickstart.ipynb" in html
+    assert str(ROOT) not in html
+    assert not re.search(r"(?<![A-Za-z0-9._-])[A-Za-z]:[\\/]", html)
+    assert not re.search(r"/Users/|/home/[a-z]", html)
 
 
 def test_the_generated_site_passes_its_checks():

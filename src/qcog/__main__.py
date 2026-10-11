@@ -1,8 +1,7 @@
 """``python -m qcog`` - the same interface as the ``qcog`` command.
 
 Provided so that the library can be used without installing the console script,
-which matters in restricted environments (and on Qollab, where the environment may
-be read-only apart from the checkout).
+which matters in restricted environments where only a checkout is available.
 """
 
 from __future__ import annotations

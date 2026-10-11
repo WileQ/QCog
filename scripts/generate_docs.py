@@ -98,9 +98,8 @@ def module_block(letter: str, models: list) -> str:
 
 
 #: Files that quote the size of the test suite.
-COUNT_FILES = ("README.md", "CONTRIBUTING.md", "docs/project_page.md", "docs/methodology.md",
-               "docs/qollab_runbook.md", "docs/submission_checklist.md", "docs/accessibility.md",
-               "ATTRIBUTION.md", "demos/showcase/README.md")
+COUNT_FILES = ("README.md", "CONTRIBUTING.md", "docs/methodology.md", "docs/accessibility.md",
+               "demos/showcase/README.md")
 
 
 def count_tests() -> int:

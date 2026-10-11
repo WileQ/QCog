@@ -7,6 +7,7 @@ dist/
 .venv/
 venv/
 env/
+old_fold/
 .pytest_cache/
 .coverage
 htmlcov/
@@ -28,3 +29,8 @@ Thumbs.db
 # the model tests write their figures, their per-model reports and their summary here; the suite
 # regenerates all of it in about a minute
 model_tests/out/
+
+# the showcase writes an accessible HTML report per model only when it is asked to
+# (`python demos/showcase/run_showcase.py --reports`); the figures and the captured console
+# output in the same directory are
+demos/showcase/reports/

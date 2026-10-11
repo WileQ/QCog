@@ -30,7 +30,7 @@ __all__ = ["build_site", "SITE_SECTIONS", "DEFAULT_REPO_URL"]
 
 #: Change this to your repository before publishing; it is used for links to files that the
 #: site does not render (source files, datasets) and for the "edit on GitHub" links.
-DEFAULT_REPO_URL = "https://github.com/qcog/qcog"
+DEFAULT_REPO_URL = "https://github.com/WileQ/QCog"
 
 #: The top-level navigation, in order.  ``href`` is relative to the site root.
 SITE_SECTIONS = (
@@ -94,8 +94,8 @@ EXAMPLE_GUIDES = {
             "the note saying whether IonQ is available here;",
             "the reminder that no code changes are needed to switch backend.",
         ],
-        "reading": "The point is portability rather than marks: the local simulator is enough for "
-        "everything in this repository, and IonQ never adds or subtracts anything. The branch "
+        "reading": "The point is portability: the free local simulator is enough for everything in "
+        "this repository, and the same circuits run on IonQ without a rewrite. The branch "
         "construction exists because restricted devices cannot measure mid-circuit, which is exactly the "
         "operation the interview construction relies on.",
     },
@@ -127,8 +127,7 @@ EXAMPLE_GUIDES = {
         ],
         "reading": "The evidence table is the useful part: it checks identities that have to hold - the "
         "interference decomposition adding up, the QQ equality, Condorcet's theorem at zero correlation - "
-        "rather than printing numbers to admire. The report is what a project page or a submission can "
-        "link to.",
+        "rather than printing numbers to admire. The report is what a project page can link to.",
     },
     "06_economy_and_vote": {
         "one_liner": "A real survey, end to end, with the circuits drawn.",
@@ -238,8 +237,7 @@ def _page(
         + _nav(active, depth, repo_url)
         + f'\n<main id="main">\n{body}\n</main>\n'
         '<footer class="site"><p>Q-Cog, generated from the library itself &mdash; plain HTML, one '
-        'stylesheet, no JavaScript, and every chart a graph with a written description. '
-        'This effort is supported by Qollab &amp; IonQ.</p>'
+        'stylesheet, no JavaScript, and every chart a graph with a written description.</p>'
         f'<p><a href="{prefix}index.html">Home</a> &middot; <a href="{prefix}circuits.html">Circuits</a> '
         f'&middot; <a href="{prefix}study.html">The five cases</a> &middot; <a href="{repo_url}">Source</a></p>'
         '</footer>\n'
@@ -530,11 +528,17 @@ def _examples_page(root: Path, name: str, script: Path, output: str | None, repo
     return title, "\n".join(body)
 
 
-def _notebook_page(notebook_path: Path, figures_dir: Path) -> tuple[str, int, int]:
+def _notebook_page(
+    notebook_path: Path, figures_dir: Path, root: Path | None = None
+) -> tuple[str, int, int]:
     """Render the quickstart notebook: prose, code, text output, and the charts it produced."""
     import base64
     import json
 
+    try:  # the notebook is named relative to the repository, never by its absolute path
+        shown = notebook_path.relative_to(root).as_posix() if root else notebook_path.as_posix()
+    except ValueError:  # pragma: no cover - only if the notebook sits outside the checkout
+        shown = notebook_path.as_posix()
     notebook = json.loads(notebook_path.read_text(encoding="utf-8"))
     figures_dir.mkdir(parents=True, exist_ok=True)
     parts: list[str] = []
@@ -543,7 +547,7 @@ def _notebook_page(notebook_path: Path, figures_dir: Path) -> tuple[str, int, in
     heading = "the notebook"
     parts.append(
         '<p class="lede-meta">The notebook below is rendered from '
-        f'<code>{_esc(notebook_path.as_posix())}</code> in the repository, with the charts its cells '
+        f'<code>{_esc(shown)}</code> in the repository, with the charts its cells '
         "produced. Run it with <code>jupyter lab demos/quickstart.ipynb</code> to do the same yourself."
         "</p>"
     )
@@ -967,7 +971,7 @@ def _build_site(
     if include_notebook:
         notebook = repository / "demos" / "quickstart.ipynb"
         if notebook.exists():
-            body, charts, cells = _notebook_page(notebook, figures_dir)
+            body, charts, cells = _notebook_page(notebook, figures_dir, repository)
             write(
                 "notebook.html",
                 _page(
@@ -1099,7 +1103,7 @@ def _build_site(
 
     # ------------------------------------------------------------------ the docs
     if include_docs:
-        documentation = ["README.md", "ATTRIBUTION.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md"]
+        documentation = ["README.md", "CONTRIBUTING.md"]
         documentation += [f"docs/{path.name}" for path in sorted((repository / "docs").glob("*.md"))]
         documentation += [
             "model_tests/README.md",

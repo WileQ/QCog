@@ -197,7 +197,7 @@ def section_repo() -> None:
     """The repository's own promises: the files, the metadata, the workflows, the tree."""
     print("=" * 100)
     required = [
-        "README.md", "LICENSE", "pyproject.toml", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "ATTRIBUTION.md",
+        "README.md", "LICENSE", "pyproject.toml", "CONTRIBUTING.md",
         "CITATION.cff", ".gitignore", "requirements.txt", "requirements-dev.txt",
         ".github/workflows/pages.yml", ".github/workflows/release.yml",
         "src/qcog/__init__.py", "src/qcog/__main__.py", "src/qcog/registry.py",
@@ -205,7 +205,7 @@ def section_repo() -> None:
         "scripts/check_figures.py", "scripts/generate_docs.py",
         "model_tests/run_all.py", "model_tests/harness.py", "model_tests/README.md",
         "demos/README.md", "demos/quickstart.ipynb",
-        "docs/methodology.md", "docs/accessibility.md", "docs/packaging.md", "docs/limitations.md",
+        "docs/methodology.md", "docs/accessibility.md", "docs/limitations.md",
         "studies/quantum_advantage/REPORT.md", "studies/quantum_advantage/results.json",
     ]
     missing = [name for name in required if not (ROOT / name).exists()]

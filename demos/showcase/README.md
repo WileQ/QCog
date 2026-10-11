@@ -30,7 +30,7 @@ re-runs each model with a parameter moved, to show how a simulator behaves when 
 | Path | Contents |
 | --- | --- |
 | `figures/` | every figure of every selected model: results, the classical-comparison chart, circuit drawings, sweeps |
-| `reports/` | a self-contained accessible HTML page per model (figures embedded, alt text, data tables, caveats) |
+| `reports/` | written only when you pass `--reports`: a self-contained accessible HTML page per model (figures embedded, alt text, data tables, caveats). It is generated, not committed |
 | `output.txt` | the captured console output of the default run |
 
 ## The models it runs by default
@@ -58,9 +58,10 @@ One per module, chosen because between them they exercise every feature of the l
 ## Reproducing the captured output
 
 ```bash
-python demos/showcase/run_showcase.py --reports > demos/showcase/output.txt
+python demos/showcase/run_showcase.py > demos/showcase/output.txt
 ```
 
 The run is deterministic (the analytic backends are exact; the sampled backends are seeded), so the numbers in
-`output.txt` can be regenerated exactly. The figure files depend on the matplotlib version in the same way any
+`output.txt` can be regenerated exactly. Paths inside the capture are repository-relative, so the file does not
+depend on the machine that produced it. The figure files depend on the matplotlib version in the same way any
 plot does.

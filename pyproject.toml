@@ -38,9 +38,9 @@ dev = ["pytest>=8.0", "pytest-cov>=5.0"]
 release = ["build>=1.2", "twine>=5.0"]
 
 [project.urls]
-Homepage = "https://github.com/qcog/qcog"
-Documentation = "https://github.com/qcog/qcog/tree/main/docs"
-Issues = "https://github.com/qcog/qcog/issues"
+Homepage = "https://github.com/WileQ/QCog"
+Documentation = "https://github.com/WileQ/QCog/tree/main/docs"
+Issues = "https://github.com/WileQ/QCog/issues"
 
 [project.scripts]
 qcog = "qcog.cli:main"

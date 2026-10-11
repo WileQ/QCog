@@ -7,9 +7,9 @@ measurement, minimal qubits) and one per branch (no mid-circuit measurement and 
 what restricted devices require). If an IonQ token is in the environment, the same circuits are
 submitted there; if not, the script says so and stops.
 
-Judging note: IonQ's simulator or hardware never add or subtract points, and the
-free local simulator is enough for everything in this repository.  This example
-exists to show that the compilation is portable and that no rewrite is needed.
+The free local simulator is enough for everything in this repository; this example
+exists to show that the compilation is portable and that no rewrite is needed to
+run the same circuits somewhere else.
 """
 
 from __future__ import annotations
@@ -59,6 +59,6 @@ if ionq_available():  # pragma: no cover - needs credentials
     print("IonQ result:", result.summary())
 else:
     print(
-        "No IONQ_API_KEY configured, so the submission path is exercised locally: "
+        "No IONQ_API_KEY configured, so this path is exercised locally: "
         "`pip install -e \".[ionq]\"` and export IONQ_API_KEY to run it for real."
     )

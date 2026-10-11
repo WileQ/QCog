@@ -5,8 +5,8 @@ Two things make this backend more than a re-implementation:
 * the circuit is built from the *same* projectors the analytic backend uses, so
   agreement between the two is a genuine cross-check of both the basis-change
   compilation and the collapse semantics of mid-circuit measurement;
-* it is the backend used by the Qollab / IonQ submission path, because it only
-  needs standard gates, and ``mid_circuit_measurement=False`` produces a circuit
+* it is the backend a hardware path uses, because it only needs standard gates,
+  and ``mid_circuit_measurement=False`` produces a circuit
   that even hardware without mid-circuit measurement can execute.
 """
 

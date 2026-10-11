@@ -1,8 +1,7 @@
 """Optional execution on IonQ backends through the official Qiskit provider.
 
-Judging note: IonQ hardware or the hosted IonQ simulator never add or subtract
-points, and Q-Cog is fully runnable on a free local simulator.  This module exists
-because the same circuits should be portable to IonQ without a rewrite, and
+Q-Cog is fully runnable on a free local simulator; this module exists because the
+same circuits should be portable to IonQ without a rewrite, and
 because the re-preparation compilation in
 :func:`qcog.circuits.builder.sequence_circuit_with_repreparation` avoids relying
 on hardware mid-circuit measurement.

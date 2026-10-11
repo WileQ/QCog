@@ -64,6 +64,18 @@ RULE = "=" * 92
 THIN = "-" * 92
 
 
+def _display(path: Path) -> str:
+    """How a path is written into the captured output.
+
+    Relative to the repository and with forward slashes, so a capture never carries a
+    machine's absolute paths and never depends on the operating system that produced it.
+    """
+    try:
+        return path.relative_to(ROOT).as_posix()
+    except ValueError:  # pragma: no cover - only if --out points outside the repo
+        return path.as_posix()
+
+
 def auto_variations(model) -> list[tuple[str, dict]]:
     """Fall back to one variation per numeric parameter, at its upper bound."""
     variations = []
@@ -201,7 +213,7 @@ def main(argv: list[str] | None = None) -> int:
     print("Q-Cog showcase")
     print(f"   models: {', '.join(slugs)}")
     print(f"   overrides: {overrides or 'none'}   sweeps: {'off' if args.fast else 'on'}")
-    print(f"   figures: {figures_dir if figures_dir else 'not saved'}")
+    print(f"   figures: {_display(figures_dir) if figures_dir else 'not saved'}")
 
     written: list[Path] = []
     for slug in slugs:
@@ -220,11 +232,7 @@ def main(argv: list[str] | None = None) -> int:
         print()
         print(f"{len(written)} files written:")
         for path in written:
-            try:
-                shown = path.relative_to(ROOT)
-            except ValueError:  # pragma: no cover - only if --out points outside the repo
-                shown = path
-            print(f"    {shown}")
+            print(f"    {_display(path)}")
     print()
     print("Next: `qcog list` for the catalogue, `qcog run <slug> --param name=value`, "
           "`qcog circuit <slug>`, or the website: `python scripts/build_website.py`.")

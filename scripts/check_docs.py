@@ -54,7 +54,6 @@ def main() -> int:
         checks.append((name, bool(ok), detail))
 
     readme = _read("README.md")
-    project_page = _read("docs/project_page.md")
     accessibility = _read("docs/accessibility.md")
     methodology = _read("docs/methodology.md")
     showcase_readme = _read("demos/showcase/README.md")
@@ -77,7 +76,7 @@ def main() -> int:
 
     # 3. the test count, if the docs quote one
     tests = _count_tests()
-    quoted = re.findall(r"(\d{2,3}) tests", readme + project_page + methodology)
+    quoted = re.findall(r"(\d{2,3}) tests", readme + methodology)
     if quoted:
         stale = sorted({value for value in quoted if int(value) != tests})
         check(
@@ -109,19 +108,18 @@ def main() -> int:
     # 6. the files the docs point at exist
     for relative in (
         "demos/showcase/run_showcase.py", "demos/showcase/output.txt", "demos/showcase/figures",
-        "demos/showcase/reports", "demos/README.md",
+        "demos/README.md",
         "src/qcog/website/build.py", "src/qcog/website/style/site.css",
-        "scripts/build_website.py", "scripts/check_website.py", "docs/packaging.md",
+        "scripts/build_website.py", "scripts/check_website.py",
         ".github/workflows/pages.yml", ".github/workflows/release.yml",
         "demos/quickstart.ipynb", "demos/examples/05_catalogue_report.py",
         "demos/examples/06_economy_and_vote.py", "scripts/check_figures.py",
         "scripts/build_website.py", "scripts/check_website.py",
         "studies/quantum_advantage/run_study.py", "studies/quantum_advantage/REPORT.md",
         "studies/quantum_advantage/results.json", "studies/quantum_advantage/README.md",
-        "scripts/generate_docs.py", "docs/models.generated.md", "docs/project_page.md",
+        "scripts/generate_docs.py", "docs/models.generated.md",
         "docs/methodology.md", "docs/accessibility.md", "docs/limitations.md",
-        "docs/demo_video_script.md", "docs/qollab_runbook.md", "docs/submission_checklist.md",
-        "ATTRIBUTION.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "LICENSE", "CITATION.cff",
+        "CONTRIBUTING.md", "LICENSE", "CITATION.cff",
     ):
         check(f"{relative} exists", (ROOT / relative).exists())
 
@@ -152,12 +150,7 @@ def main() -> int:
     check("README points at the showcase", "demos/showcase" in readme)
     check("README points at the website", "website/" in readme)
     check("README documents installing from PyPI", "pip install qcog" in readme)
-    check("README points at the packaging guide", "docs/packaging.md" in readme)
     check("README points at the comparative study", "studies/quantum_advantage" in readme)
-    check("project page points at the comparative study", "studies/quantum_advantage" in project_page)
-    check("project page points at the showcase", "showcase" in project_page)
-    check("project page points at the notebook", "notebook" in project_page.lower())
-    check("project page points at the website", "website" in project_page.lower())
     check(
         "the website is generated, not committed",
         "website/" in _read(".gitignore"),

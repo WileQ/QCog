@@ -50,6 +50,7 @@ def check_site(directory: Path, models: list[str] | None = None) -> list[dict]:
     missing_images: list[str] = []
     empty_figures: list[str] = []
     broken_links: list[str] = []
+    leaked_paths: list[str] = []
     for page in pages:
         html = page.read_text(encoding="utf-8")
         relative = page.relative_to(directory).as_posix()
@@ -71,6 +72,9 @@ def check_site(directory: Path, models: list[str] | None = None) -> list[dict]:
                 target = (page.parent / source.group(1)).resolve()
                 if not target.exists():
                     missing_images.append(f"{relative} -> {source.group(1)}")
+        leaked = re.search(r"(?<![A-Za-z0-9._-])[A-Za-z]:[\\/]|/Users/|/home/[a-z]", html)
+        if leaked:
+            leaked_paths.append(f"{relative}: {leaked.group(0)}")
         for match in re.finditer(r"<figure>(.*?)</figure>", html, flags=re.S):
             if "<img" not in match.group(1):
                 empty_figures.append(relative)
@@ -92,6 +96,11 @@ def check_site(directory: Path, models: list[str] | None = None) -> list[dict]:
     record("every referenced figure exists", not missing_images, "; ".join(missing_images[:4]))
     record("no figure is a block of text without a chart", not empty_figures, ", ".join(empty_figures[:4]))
     record("every internal link resolves", not broken_links, "; ".join(broken_links[:4]))
+    record(
+        "no page leaks a local file path",
+        not leaked_paths,
+        "; ".join(leaked_paths[:4]) or "no drive letters or home directories on any page",
+    )
 
     # the site is black and white: every figure has to be greyscale, and the stylesheet has to
     # keep the only colour for errors

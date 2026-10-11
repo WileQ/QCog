@@ -1,6 +1,6 @@
 # Accessibility
 
-The submission requirement is to "follow industry best practices on UI accessibility". This document states
+The library follows industry best practices on UI accessibility. This document states
 what Q-Cog does, and - more usefully - how anyone can verify it.
 
 ## Principles applied
