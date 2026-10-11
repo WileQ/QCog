@@ -491,6 +491,21 @@ def _render_markdown_page(
     return title, body
 
 
+def _sanitise_capture(text: str, root: Path) -> str:
+    """Remove the build machine's file paths from captured console output.
+
+    The site is published, so a page must never name the directory it was built in: the
+    repository root is replaced by ``.``, and any absolute path left over - a home
+    directory, a temporary directory, a drive letter on another machine - is masked.
+    """
+    for prefix in {str(root), root.as_posix()}:
+        if prefix:
+            text = text.replace(prefix, ".")
+    text = re.sub(r"(?<![A-Za-z0-9._-])[A-Za-z]:[\\/][^\s\"'<>]*", "<path>", text)
+    text = re.sub(r"/(?:home|Users|tmp)/[^\s\"'<>]*", "<path>", text)
+    return text
+
+
 def _examples_page(root: Path, name: str, script: Path, output: str | None, repo_url: str) -> tuple[str, str]:
     """One example: its docstring as prose, its source, and the output it produced."""
     text = script.read_text(encoding="utf-8")
@@ -1008,6 +1023,8 @@ def _build_site(
                     )
                 except Exception as error:  # pragma: no cover - reported in the page
                     output = f"[the site build could not run this script: {type(error).__name__}: {error}]"
+                if output:
+                    output = _sanitise_capture(output, repository)
             title, body = _examples_page(repository, relative, script, output, repo_url)
             page = script.stem + ".html"
             write(

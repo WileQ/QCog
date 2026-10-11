@@ -90,6 +90,17 @@ def test_a_small_site_builds_with_every_property(tmp_path):
     assert "circuit" in html.lower()
 
 
+def test_captured_output_never_names_the_build_machine():
+    """The examples' captured output is published, so it must not carry absolute paths."""
+    from qcog.website.build import _sanitise_capture
+
+    root = Path("/home/runner/work/QCog/QCog")
+    assert _sanitise_capture(root.as_posix() + "/out/x.png", root) == "./out/x.png"
+    assert "<path>" in _sanitise_capture("see C:\\Users\\someone\\x.png", root)
+    assert "<path>" in _sanitise_capture("/tmp/scratch/y.txt", root)
+    assert _sanitise_capture("https://example.com/a", root) == "https://example.com/a"
+
+
 def test_the_notebook_page_names_the_notebook_relatively(tmp_path):
     """The published site must never print the build machine's absolute paths."""
     from qcog.website import build_site
