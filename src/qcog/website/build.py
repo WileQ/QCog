@@ -444,7 +444,8 @@ def _model_page(model_class, result, figures: dict, relative: str, circuits: lis
 def _docs_page_name(relative: str) -> str:
     """The file the site writes for one rendered Markdown document, unique per source file."""
     if relative == "README.md":
-        return "index"
+        # not "index": that is the documentation index page, and the README would overwrite it
+        return "readme"
     if relative.startswith("docs/"):
         return Path(relative).stem
     return re.sub(r"[^a-z0-9]+", "-", relative.lower()).strip("-").removesuffix("-md")
