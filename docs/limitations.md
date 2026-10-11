@@ -29,11 +29,13 @@ the report. This document collects the limits that apply to the library as a who
   mathematical result about the model, not an empirical finding about people.
 * **Concept combination / conceptual entanglement.** Concurrence and entanglement entropy are properties of the
   modelled state. They quantify joint structure; they do not diagnose anything about a person.
-* **Game theory.** Conventions for the entangling gate and strategy phases vary between papers, and the "(Q,Q) is
-  a Nash equilibrium" claim depends on the strategy space assumed. Q-Cog documents its convention, verifies the
-  payoff-dominance and classical-limit properties, and prints the best-response scan instead of asserting an
-  equilibrium it cannot check. `evolution-of-cooperation` shows that which strategy survives depends on the
-  convention: in this library's convention the surviving cooperative strategy is the classical one, not `Q`.
+* **Game theory.** Conventions for the entangling gate and the strategy phases vary between papers, so the
+  library states its own and verifies what it can check: at full entanglement defecting on a cooperator is
+  punished (`0` instead of the classical `5`) and mutual cooperation is the best reply to itself; at zero
+  entanglement the classical payoff matrix is reproduced exactly. EWL's "quantum" strategy `Q = U(pi/2, 0)` is
+  in the strategy table, but in this convention the *entangler* is what makes cooperation stable, not `Q`, so the
+  models print the payoff table and the best-response scan rather than asserting an equilibrium they cannot
+  check. `evolution-of-cooperation` shows which strategy survives: the classical cooperator `C`, not `Q`.
 * **Population models.** The dense simulation supports at most ten agents. Larger networks need the classical
   baselines included in `qcog.core.classical`, or a tensor-network implementation. The trajectories are
   deterministic given the initial state (no measurement randomness between rounds), which is a modelling choice,

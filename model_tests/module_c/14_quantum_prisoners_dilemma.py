@@ -1,6 +1,6 @@
 """Quantum prisoners dilemma - module C, model 14 of 23.
 
-The Eisert-Wilkert-Lewenstein scheme: two players share an entangled state, play unitary
+The Eisert-Wilkens-Lewenstein scheme: two players share an entangled state, play unitary
 strategies, and measure.  The checks confirm the headline comparison - mutual cooperation with
 certainty against the classical Nash payoff - read the payoff table, and record what the
 entanglement parameter actually does to those numbers.

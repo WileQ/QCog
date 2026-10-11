@@ -46,7 +46,7 @@ relevant modules. The sources used for the phenomena, models and tests include:
 * Tversky & Shafir (1992) and Shafir & Tversky (1992) - the disjunction effect.
 * Busemeyer, Pothos, Franco & Trueblood (2011) - interference accounts of probability judgement.
 * Aerts & Gabora (2005), Hampton (1987) - concept combination and emergence.
-* Eisert, Wilkert & Lewenstein (1999) - quantum games; DeGroot (1974), Hegselmann & Krause (2002), Condorcet
+* Eisert, Wilkens & Lewenstein (1999) - quantum games; DeGroot (1974), Hegselmann & Krause (2002), Condorcet
   (1785), Bikhchandani, Hirshleifer & Welch (1992) - the classical baselines for the group models.
 
 No text, code or figure was copied from these sources. What was taken from them is: the questions, the

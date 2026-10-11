@@ -15,7 +15,6 @@ out/
 *.png
 *.pdf
 *.svg
-!docs/figures/*.png
 !demos/showcase/figures/*.png
 !studies/quantum_advantage/figures/*.png
 .DS_Store

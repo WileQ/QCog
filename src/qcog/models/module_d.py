@@ -497,7 +497,7 @@ class CollectiveJudgment(PopulationModel):
     )
     references = (
         "Condorcet (1785), Essai sur l'application de l'analyse a la probabilite des decisions rendues a la pluralite des voix.",
-        "Ladha (1992), The Condorcet jury theorem, dependent voters and correlated votes, Public Choice 74, 331-342.",
+        "Ladha (1992), The Condorcet jury theorem, free speech and correlated votes, American Journal of Political Science 36(3), 617-634.",
     )
     caveats = default_caveats + (
         "Correlation is modelled as a GHZ-style state; real groups correlate for many reasons, and the model "

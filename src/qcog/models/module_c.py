@@ -6,7 +6,7 @@ shared context, the evolution of cooperation in a population, bidding under
 uncertainty, and coordination without communication.
 
 A note on vocabulary, because it matters for judging: *quantum game theory*
-(a strategic formalism, Eisert-Wilkert-Lewenstein) and *quantum cognition* (how a
+(a strategic formalism, Eisert-Wilkens-Lewenstein) and *quantum cognition* (how a
 person represents an uncertain choice) overlap but are not the same thing.  The
 models here are labelled as game theory, and their classical baselines are the
 usual Nash or replicator analyses of the same payoff matrices.
@@ -52,7 +52,7 @@ def move_questions(num_qubits: int = 2, outcomes=("C", "D")):
 
 
 class QuantumPrisonersDilemma(Model):
-    """The Eisert-Wilkert-Lewenstein quantum prisoner's dilemma.
+    """The Eisert-Wilkens-Lewenstein quantum prisoner's dilemma.
 
     Before choosing, the two players' qubits are entangled by ``J(gamma)``; after
     choosing, the entanglement is undone and the moves are measured.  At maximal
@@ -76,7 +76,7 @@ class QuantumPrisonersDilemma(Model):
         "defect?"
     )
     quantum_mechanism = (
-        "The Eisert-Wilkert-Lewenstein scheme: an entangling gate before the strategy unitaries and its "
+        "The Eisert-Wilkens-Lewenstein scheme: an entangling gate before the strategy unitaries and its "
         "inverse after, so the players can use non-classical strategies that the entanglement makes "
         "coherent."
     )
@@ -85,17 +85,17 @@ class QuantumPrisonersDilemma(Model):
         "equilibrium, and both players receive the punishment payoff."
     )
     references = (
-        "Eisert, Wilkert & Lewenstein (1999), Quantum games and quantum strategies, Physical Review Letters 83, 3077.",
+        "Eisert, Wilkens & Lewenstein (1999), Quantum games and quantum strategies, Physical Review Letters 83, 3077.",
         "Benjamin & Hayden (2001), Multiplayer quantum games, Physical Review A 64, 030301.",
     )
     caveats = default_caveats + (
         "This is a game-theoretic model: 'players' need not be people, and the entanglement is part of the "
         "game's rules rather than a claim about negotiation between humans.",
-        "Sign and phase conventions for the entangling gate differ between papers, and the claim that (Q,Q) "
-        "is a Nash equilibrium is convention-dependent. This library documents its own convention, verifies "
-        "the statements it makes (payoff dominance, the disappearance of the temptation to defect, and the "
-        "exact classical limit at zero entanglement) and prints the best-response scan instead of asserting "
-        "an equilibrium it cannot check.",
+        "Sign and phase conventions for the entangling gate differ between papers. This library documents "
+        "its own convention and verifies what it can check: at full entanglement defecting on a cooperator is "
+        "punished and mutual cooperation is the best reply to itself, and at zero entanglement the classical "
+        "payoff matrix is reproduced exactly. The best-response scan is printed rather than turned into an "
+        "equilibrium claim, because that claim depends on the strategy space assumed.",
     )
     keywords = ("prisoner's dilemma", "quantum game theory", "entanglement", "Nash equilibrium", "cooperation")
     difficulty = "intermediate"
@@ -270,7 +270,7 @@ class NegotiationTrust(Model):
         "the payoff-dominant outcome."
     )
     references = (
-        "Eisert, Wilkert & Lewenstein (1999), Quantum games and quantum strategies, PRL 83, 3077.",
+        "Eisert, Wilkens & Lewenstein (1999), Quantum games and quantum strategies, PRL 83, 3077.",
         "Skyrms (2004), The Stag Hunt and the Evolution of Social Structure.",
     )
     caveats = default_caveats + (
@@ -425,7 +425,7 @@ class EvolutionOfCooperation(Model):
         "from any interior starting point."
     )
     references = (
-        "Eisert, Wilkert & Lewenstein (1999), Quantum games and quantum strategies, PRL 83, 3077.",
+        "Eisert, Wilkens & Lewenstein (1999), Quantum games and quantum strategies, PRL 83, 3077.",
         "Taylor & Jonker (1978), Evolutionary stable strategies and game dynamics, Mathematical Biosciences 40, 145-156.",
     )
     caveats = default_caveats + (
@@ -819,7 +819,7 @@ class CoordinationGames(Model):
         "1/2."
     )
     references = (
-        "Eisert, Wilkert & Lewenstein (1999), Quantum games and quantum strategies, PRL 83, 3077.",
+        "Eisert, Wilkens & Lewenstein (1999), Quantum games and quantum strategies, PRL 83, 3077.",
         "La Mura (2005), Correlated equilibria of classical strategic games with quantum signals, International Journal of Quantum Information 3, 183-188.",
     )
     caveats = default_caveats + (

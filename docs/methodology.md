@@ -205,16 +205,18 @@ is favoured" from "the two accounts are statistically indistinguishable on these
 
 ## 7. Game theory conventions
 
-The quantum games use the Eisert-Wilkert-Lewenstein scheme: `J(gamma) = cos(gamma/2) I + i sin(gamma/2) X x X`
+The quantum games use the Eisert-Wilkens-Lewenstein scheme: `J(gamma) = cos(gamma/2) I + i sin(gamma/2) X x X`
 applied to `|00>`, then the players' unitaries `U(theta, phi) = [[e^{i phi} cos(theta/2), sin(theta/2)],
 [-sin(theta/2), e^{-i phi} cos(theta/2)]]`, then `J†`, then a computational-basis measurement. Player 1 owns the
 most significant qubit, so the basis index of the move pair `(own, opponent)` is `opponent_bit + 2 * own_bit`.
 
-Sign and phase conventions differ between papers, and the widely quoted "(Q,Q) is a Nash equilibrium" claim
-depends on which strategy space the players are allowed to use. Q-Cog therefore documents its own convention and
-verifies what can be verified: `(Q,Q)` gives the payoff-dominant `(3,3)`, `(D,D)` gives `(1,1)`, zero
-entanglement reproduces the classical payoff matrix exactly, and the best-response scan over the full
-two-parameter strategy family against `Q` is *printed* rather than turned into an equilibrium claim. See
+In this convention it is the *entangler* that removes the dilemma, and the quantum games verify that rather
+than assert it: with maximal entanglement defecting on a cooperator pays `0` instead of the classical `5`,
+mutual cooperation `(3, 3)` is the best reply to itself, and at zero entanglement the classical payoff matrix -
+the temptation included - is reproduced exactly. EWL's "quantum" strategy `Q = U(pi/2, 0)` is in the strategy
+table, but it is not what makes cooperation stable here (two `Q` players meet in a mixed outcome), so the models
+print the payoff table and the best-response scan for the strategies actually in play. Sign and phase
+conventions differ between papers, so this paragraph is the statement of the one this library uses. See
 [`limitations.md`](limitations.md).
 
 ## 8. Population models

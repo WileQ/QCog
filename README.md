@@ -181,7 +181,7 @@ Twenty-three models in four modules (module letters follow the project's origina
 
 | Model | Question it explores |
 | --- | --- |
-| `quantum-prisoners-dilemma` | The Eisert-Wilkert-Lewenstein scheme: does entanglement change the game? |
+| `quantum-prisoners-dilemma` | The Eisert-Wilkens-Lewenstein scheme: does entanglement change the game? |
 | `negotiation-trust` | Trust as correlation; agreement as a function of shared context |
 | `evolution-of-cooperation` | Replicator dynamics on quantum-induced payoffs: where does cooperation survive? |
 | `auctions` | Value and bid are different questions: order, rival information, winner's curse |

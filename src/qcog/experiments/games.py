@@ -1,11 +1,13 @@
-"""Two-player quantum games (the Eisert-Wilkert-Lewenstein scheme).
+"""Two-player quantum games (the Eisert-Wilkens-Lewenstein scheme).
 
 Both players act on their own qubit with a unitary strategy; an entangling gate
 ``J`` couples them before and after, and the final computational-basis
 measurement decides the classical outcome whose payoffs are then read off.  With
-maximal entanglement this turns the prisoner's dilemma into a game whose unique
-equilibrium is mutual cooperation - a clean, checkable, and famous result, which
-makes it a good teaching example and a good test.
+maximal entanglement the classical temptation to defect on a cooperator is gone -
+defecting pays 0 instead of 5, so mutual cooperation is the best reply to itself -
+which is the famous result this module is built to reproduce and to check.  (It
+comes from the entangler acting on the cooperation strategy, not from a special
+"quantum" strategy: see ``strategy_unitary`` and the models in module C.)
 
 The implementation builds the actual unitary of the EWL circuit, so the same
 object produces a circuit for Aer or IonQ and an exact statevector payoff.
@@ -48,7 +50,11 @@ def strategy_unitary(theta: float, phi: float = 0.0) -> np.ndarray:
     """The Eisert strategy family ``U(theta, phi)``.
 
     ``U(0, 0) = I`` is cooperate, ``U(pi, 0)`` is defect and ``U(pi/2, 0)`` is the
-    "quantum" strategy ``Q``, which is what makes cooperation the equilibrium.
+    "quantum" strategy ``Q`` that EWL analyse.  In this library's convention it is the
+    *entangler* that makes cooperation stable, and it does so for the classical cooperation
+    strategy; two ``Q`` players meet in a mixed outcome.  The models therefore report the
+    payoff table and the best-response scan for the strategies actually in play instead of
+    making an equilibrium claim about ``Q``.
     """
     half = theta / 2.0
     return np.array(

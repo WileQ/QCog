@@ -2,7 +2,7 @@
 
 These are the handful of structures that most of the catalogue is built from: two
 questions asked in both orders, a two-player quantum game in the
-Eisert-Wilkert-Lewenstein scheme, and a population of interacting agents. Keeping
+Eisert-Wilkens-Lewenstein scheme, and a population of interacting agents. Keeping
 them here - rather than inside the models - is what lets a new model be a
 configuration plus an explanation instead of a new simulator.
 """

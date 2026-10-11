@@ -172,7 +172,7 @@ REAL_WORLD = (
     (
         "quantum-prisoners-dilemma",
         "Can two players cooperate without trusting each other?",
-        "The Eisert-Wilkert-Lewenstein scheme: an entangling gate, then each player's own unitary, then a "
+        "The Eisert-Wilkens-Lewenstein scheme: an entangling gate, then each player's own unitary, then a "
         "measurement. At full entanglement the classical temptation to defect is gone.",
         "expected payoff for the first player",
     ),

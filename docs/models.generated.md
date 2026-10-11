@@ -511,7 +511,7 @@ qcog info contradictory-beliefs
 *Entangling the players before they choose turns mutual cooperation into the equilibrium: (3,3) instead of the classical (1,1), and the advantage fades smoothly with decoherence.*
 
 - **Cognitive question.** Can a shared, correlated context make cooperation rational between partners who are each tempted to defect?
-- **Quantum mechanism.** The Eisert-Wilkert-Lewenstein scheme: an entangling gate before the strategy unitaries and its inverse after, so the players can use non-classical strategies that the entanglement makes coherent.
+- **Quantum mechanism.** The Eisert-Wilkens-Lewenstein scheme: an entangling gate before the strategy unitaries and its inverse after, so the players can use non-classical strategies that the entanglement makes coherent.
 - **Classical baseline.** The classical prisoner's dilemma: defection strictly dominates, mutual defection is the unique Nash equilibrium, and both players receive the punishment payoff.
 - **Difficulty.** intermediate
 - **Keywords.** prisoner's dilemma, quantum game theory, entanglement, Nash equilibrium, cooperation
@@ -532,11 +532,11 @@ qcog info contradictory-beliefs
 - This is a model of response probabilities, not a claim about what the brain does.
 - A quantum model only means the data are described by a quantum probability space; classical models may fit equally well, and the classical baseline is reported for that reason.
 - This is a game-theoretic model: 'players' need not be people, and the entanglement is part of the game's rules rather than a claim about negotiation between humans.
-- Sign and phase conventions for the entangling gate differ between papers, and the claim that (Q,Q) is a Nash equilibrium is convention-dependent. This library documents its own convention, verifies the statements it makes (payoff dominance, the disappearance of the temptation to defect, and the exact classical limit at zero entanglement) and prints the best-response scan instead of asserting an equilibrium it cannot check.
+- Sign and phase conventions for the entangling gate differ between papers. This library documents its own convention and verifies what it can check: at full entanglement defecting on a cooperator is punished and mutual cooperation is the best reply to itself, and at zero entanglement the classical payoff matrix is reproduced exactly. The best-response scan is printed rather than turned into an equilibrium claim, because that claim depends on the strategy space assumed.
 
 **References.**
 
-- Eisert, Wilkert & Lewenstein (1999), Quantum games and quantum strategies, Physical Review Letters 83, 3077.
+- Eisert, Wilkens & Lewenstein (1999), Quantum games and quantum strategies, Physical Review Letters 83, 3077.
 - Benjamin & Hayden (2001), Multiplayer quantum games, Physical Review A 64, 030301.
 
 ```bash
@@ -573,7 +573,7 @@ qcog info quantum-prisoners-dilemma
 
 **References.**
 
-- Eisert, Wilkert & Lewenstein (1999), Quantum games and quantum strategies, PRL 83, 3077.
+- Eisert, Wilkens & Lewenstein (1999), Quantum games and quantum strategies, PRL 83, 3077.
 - Skyrms (2004), The Stag Hunt and the Evolution of Social Structure.
 
 ```bash
@@ -611,7 +611,7 @@ qcog info negotiation-trust
 
 **References.**
 
-- Eisert, Wilkert & Lewenstein (1999), Quantum games and quantum strategies, PRL 83, 3077.
+- Eisert, Wilkens & Lewenstein (1999), Quantum games and quantum strategies, PRL 83, 3077.
 - Taylor & Jonker (1978), Evolutionary stable strategies and game dynamics, Mathematical Biosciences 40, 145-156.
 
 ```bash
@@ -684,7 +684,7 @@ qcog info auctions
 
 **References.**
 
-- Eisert, Wilkert & Lewenstein (1999), Quantum games and quantum strategies, PRL 83, 3077.
+- Eisert, Wilkens & Lewenstein (1999), Quantum games and quantum strategies, PRL 83, 3077.
 - La Mura (2005), Correlated equilibria of classical strategic games with quantum signals, International Journal of Quantum Information 3, 183-188.
 
 ```bash
@@ -802,7 +802,7 @@ qcog info polarization
 **References.**
 
 - Condorcet (1785), Essai sur l'application de l'analyse a la probabilite des decisions rendues a la pluralite des voix.
-- Ladha (1992), The Condorcet jury theorem, dependent voters and correlated votes, Public Choice 74, 331-342.
+- Ladha (1992), The Condorcet jury theorem, free speech and correlated votes, American Journal of Political Science 36(3), 617-634.
 
 ```bash
 qcog run collective-judgment
