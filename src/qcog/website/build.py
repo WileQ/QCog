@@ -37,11 +37,119 @@ SITE_SECTIONS = (
     ("index.html", "Home"),
     ("models/index.html", "Models"),
     ("circuits.html", "Circuits"),
+    ("notebook.html", "Quickstart"),
     ("examples/index.html", "Examples"),
     ("study.html", "Study"),
-    ("checks.html", "Checks"),
     ("docs/index.html", "Docs"),
 )
+
+#: What each example is for: the scenario it sets up, what to look for in its output, and what
+#: the numbers mean.  Written by hand, because it is the part a reader cannot get from the code.
+EXAMPLE_GUIDES = {
+    "01_first_steps": {
+        "one_liner": "One belief, two questions, both orders: the shortest complete example.",
+        "scenario": "A respondent has an attitude you cannot see. You ask them one question, then a "
+        "second, related one - and then you ask the same two in the opposite order to somebody else. A "
+        "classical account says the order cannot matter: both answers come out of one joint "
+        "distribution, so the marginal of the first question is fixed. Here it is not.",
+        "look_for": [
+            "the belief state and the two questions, in the first block;",
+            "the two joint distributions, one per order;",
+            "the order effect - how far the first question's marginal moved - and the QQ equality, a "
+            "prediction with no free parameters;",
+            "the classical comparison, which is the point of the exercise.",
+        ],
+        "reading": "A non-zero order effect already excludes any single joint distribution: no "
+        "arrangement of one probability space moves a marginal because of the order the questions were "
+        "asked in. The QQ line is the part the model cannot tune, which is what makes it a test of the "
+        "theory rather than a description of one survey.",
+    },
+    "02_question_order": {
+        "one_liner": "The flagship model run three ways: exactly, on the compiled circuit, and with noise.",
+        "scenario": "The same two-question design as the first example, run the way a study would run "
+        "it: once analytically, once by compiling the design into a Qiskit circuit and reading the "
+        "result, and once with depolarising noise applied between the two questions. The last block "
+        "writes an HTML report of the run.",
+        "look_for": [
+            "three summaries of one model, which should tell the same story;",
+            "the compiled circuit agreeing with the analytic numbers - that agreement is what makes the "
+            "circuit drawing on the model page worth trusting;",
+            "the noisy run, where the interference term shrinks;",
+            "the path of the report it writes.",
+        ],
+        "reading": "Nothing in the second run is a re-implementation: the same objects are compiled and "
+        "evaluated, so a disagreement between them would be a bug rather than a modelling choice. Noise "
+        "is where the claim gets testable in practice - an order effect that survives noise is a "
+        "stronger statement than one that needs perfect coherence.",
+    },
+    "03_hardware_and_ionq": {
+        "one_liner": "Compiling for a device, and running the same circuits on IonQ if a token is set.",
+        "scenario": "Hardware imposes a gate set and does not allow mid-circuit measurement. The script "
+        "builds the two constructions the library ships - one circuit for the whole interview, and one "
+        "per branch, which avoids mid-circuit measurement and reset altogether - prints what each costs "
+        "in depth and gates, and, only if an IonQ token is in the environment, submits the same circuits "
+        "to IonQ.",
+        "look_for": [
+            "the two compilations and their depth;",
+            "the note saying whether IonQ is available here;",
+            "the reminder that no code changes are needed to switch backend.",
+        ],
+        "reading": "The point is portability rather than marks: the local simulator is enough for "
+        "everything in this repository, and IonQ never adds or subtracts anything. The branch "
+        "construction exists because restricted devices cannot measure mid-circuit, which is exactly the "
+        "operation the interview construction relies on.",
+    },
+    "04_fit_to_data": {
+        "one_liner": "Fitting a model to observed frequencies, and comparing it with a classical baseline.",
+        "scenario": "You have response frequencies from a study, not a theory. The script fits the "
+        "model's parameters to the observed joint distribution, fits a classical alternative to the same "
+        "numbers, and compares the two - the workflow you would use with real data in place of the "
+        "illustrative synthetic file shipped here.",
+        "look_for": [
+            "the fitted parameters, and how far they moved from the defaults;",
+            "the two fits' scores side by side;",
+            "the note that the data file is synthetic.",
+        ],
+        "reading": "A fit is a parameter search inside the model's own declared bounds, so the "
+        "parameters it reports are always legal; what matters is whether the fitted quantum model beats "
+        "the classical one on the same data. Read this as a method demonstration, not an empirical "
+        "claim.",
+    },
+    "05_catalogue_report": {
+        "one_liner": "Every model in the catalogue, the self-check table, and the full report.",
+        "scenario": "The whole library in one run: every model in all four modules, the evidence table "
+        "the library keeps about itself, and a self-contained HTML report - no JavaScript, no network, "
+        "every chart with its description and the data table behind it - that can be published as it is.",
+        "look_for": [
+            "one block per module, with each model's headline;",
+            "the evidence table, which is the library checking its own identities;",
+            "the paths of the two reports it writes.",
+        ],
+        "reading": "The evidence table is the useful part: it checks identities that have to hold - the "
+        "interference decomposition adding up, the QQ equality, Condorcet's theorem at zero correlation - "
+        "rather than printing numbers to admire. The report is what a project page or a submission can "
+        "link to.",
+    },
+    "06_economy_and_vote": {
+        "one_liner": "A real survey, end to end, with the circuits drawn.",
+        "scenario": "Question A: &quot;Are you satisfied with the economy?&quot; Question B: &quot;Will "
+        "you vote for the current administration?&quot; Half the respondents are asked A first, half B "
+        "first. In a classical account that cannot matter; in this model the two questions are "
+        "incompatible, so answering one changes the state the other is put to. The script prints the "
+        "numbers and then draws the circuits that produce them, with the survey questions on the gates.",
+        "look_for": [
+            "the marginal of question A in each order, and the shift between them;",
+            "the law-of-total-probability check, which a classical account satisfies exactly;",
+            "the QQ equality, which the model satisfies without being fitted;",
+            "the circuit files it writes into out/economy_vote/.",
+        ],
+        "reading": "The shift is the whole argument: a classical joint distribution has no way to "
+        "produce two different marginals for the same question. The circuits are the mechanism made "
+        "visible - prepare the belief, rotate into the first question's basis, measure, rotate back, ask "
+        "the second.",
+    },
+}
+
 
 #: Short, real questions the library answers, used on the examples page and the home page.
 REAL_WORLD = (
@@ -133,7 +241,7 @@ def _page(
         'stylesheet, no JavaScript, and every chart a graph with a written description. '
         'This effort is supported by Qollab &amp; IonQ.</p>'
         f'<p><a href="{prefix}index.html">Home</a> &middot; <a href="{prefix}circuits.html">Circuits</a> '
-        f'&middot; <a href="{prefix}checks.html">Checks</a> &middot; <a href="{repo_url}">Source</a></p>'
+        f'&middot; <a href="{prefix}study.html">The five cases</a> &middot; <a href="{repo_url}">Source</a></p>'
         '</footer>\n'
         "</body>\n</html>\n"
     )
@@ -147,6 +255,30 @@ def _figure_block(path: str, name: str, description: str) -> str:
         f'<details><summary>Long description of this chart</summary><p>{_esc(description)}</p></details>'
         "</figure>"
     )
+
+
+def _html_table(rows: list[dict], caption: str) -> str:
+    """A table whose cells are already HTML.
+
+    ``report._table`` escapes every cell, which is right for data and wrong for a cell that is a
+    link; this one leaves the caller's markup alone and escapes only the caption.
+    """
+    if not rows:
+        return ""
+    header = "".join(f'<th scope="col">{_esc(column)}</th>' for column in rows[0])
+    body = "".join(
+        "<tr>" + "".join(f"<td>{value}</td>" for value in row.values()) + "</tr>" for row in rows
+    )
+    return (
+        '<div class="table-wrap"><table>'
+        f"<caption>{_esc(caption)}</caption>"
+        f"<thead><tr>{header}</tr></thead><tbody>{body}</tbody></table></div>"
+    )
+
+
+def _anchor(slug: str, design: str) -> str:
+    """The id of one circuit design on the circuits page, and the link to it."""
+    return "c-" + re.sub(r"[^a-z0-9]+", "-", f"{slug}-{design}".lower()).strip("-")
 
 
 def _safe(name: str) -> str:
@@ -374,6 +506,15 @@ def _examples_page(root: Path, name: str, script: Path, output: str | None, repo
     prose = "\n".join(docstring.splitlines()[1:]).strip()
     if prose:
         body.append(markdown.to_html(prose)[0])
+    guide = EXAMPLE_GUIDES.get(script.stem)
+    if guide:
+        body.append(f"<h2>The scenario</h2><p>{guide['scenario']}</p>")
+        body.append(
+            "<h2>What to look for in the output</h2><ul>"
+            + "".join(f"<li>{item}</li>" for item in guide["look_for"])
+            + "</ul>"
+        )
+        body.append(f"<h2>What the numbers mean</h2><p>{guide['reading']}</p>")
     if output:
         body.append("<h2>Output</h2><pre class=\"code\" data-language=\"text\"><code>" + _esc(output) + "</code></pre>")
     else:
@@ -388,22 +529,29 @@ def _examples_page(root: Path, name: str, script: Path, output: str | None, repo
     return title, "\n".join(body)
 
 
-def _notebook_page(notebook_path: Path) -> tuple[str, int, int]:
-    """Render the quickstart notebook: prose, code, and text output (charts are linked)."""
+def _notebook_page(notebook_path: Path, figures_dir: Path) -> tuple[str, int, int]:
+    """Render the quickstart notebook: prose, code, text output, and the charts it produced."""
+    import base64
     import json
 
     notebook = json.loads(notebook_path.read_text(encoding="utf-8"))
+    figures_dir.mkdir(parents=True, exist_ok=True)
     parts: list[str] = []
     charts = 0
     title_done = False
+    heading = "the notebook"
     parts.append(
         '<p class="lede-meta">The notebook below is rendered from '
-        f'<code>{_esc(notebook_path.as_posix())}</code> in the repository; its charts appear on the model pages '
-        "with their descriptions.</p>"
+        f'<code>{_esc(notebook_path.as_posix())}</code> in the repository, with the charts its cells '
+        "produced. Run it with <code>jupyter lab demos/quickstart.ipynb</code> to do the same yourself."
+        "</p>"
     )
     for cell in notebook.get("cells", []):
         source = "".join(cell.get("source", []))
         if cell.get("cell_type") == "markdown":
+            for line in source.splitlines():
+                if line.startswith("#"):
+                    heading = line.lstrip("# ").strip()
             # the notebook's own title becomes the page's h1; every other heading is shifted down
             # one level so the page keeps exactly one top-level heading
             shift = 0 if (not title_done and source.lstrip().startswith("# ")) else 1
@@ -427,14 +575,29 @@ def _notebook_page(notebook_path: Path) -> tuple[str, int, int]:
                     + _esc("".join(output["text"]))
                     + "</code></pre>"
                 )
-            elif "data" in output and any(key.startswith("image") for key in output["data"]):
-                charts += 1
-    if charts:
-        parts.append(
-            f'<p class="lede-meta">{charts} chart(s) were produced by the cells above and are not repeated here: '
-            "every one of them appears, with its description and the data table behind it, on the "
-            '<a href="models/index.html">model pages</a>.</p>'
-        )
+            data = output.get("data", {})
+            image = next((key for key in data if key.startswith("image/")), None)
+            if image is None:
+                continue
+            charts += 1
+            suffix = image.split("/", 1)[1].replace("jpeg", "jpg")
+            filename = f"notebook__{charts:02d}.{suffix}"
+            target = figures_dir / filename
+            raw = data[image]
+            if isinstance(raw, str):
+                target.write_bytes(base64.b64decode(raw))
+            else:  # a list of text lines, which some kernels emit
+                target.write_text("".join(raw), encoding="utf-8")
+            _greyscale(target)
+            caption = (
+                f"Figure {charts} of the notebook - a chart produced by the cell above, from the "
+                f"section &lsquo;{heading}&rsquo;. Every chart in the notebook is also on the model "
+                "pages, with its description and the data table behind it."
+            )
+            parts.append(
+                f'<figure><img src="assets/figures/{_esc(filename)}" alt="{_esc(caption)}">'
+                f"<figcaption>{caption}</figcaption></figure>"
+            )
     return "\n".join(parts), charts, len(notebook.get("cells", []))
 
 
@@ -442,7 +605,7 @@ def _circuits_page(all_models: dict, all_circuits: dict, all_figures: dict) -> t
     """Every circuit in the catalogue: the drawing, the terminal diagram and the statistics."""
     total = sum(len(all_circuits[slug]) for slug in all_circuits)
     parts = [
-        "<h1>Circuits</h1>",
+        '<h1 id="top">Circuits</h1>',
         f'<p class="lead">{total} circuit designs, drawn in black and white by Qiskit and written out '
         "again as text. Each one is the design the model compiles for that situation, so the picture is "
         "the simulation rather than an illustration of it.</p>",
@@ -458,28 +621,43 @@ def _circuits_page(all_models: dict, all_circuits: dict, all_figures: dict) -> t
         for design in designs:
             rows.append(
                 {
+                    "design": f'<a href="#{_anchor(slug, design["name"])}">{_esc(design["name"])}</a>',
                     "model": f'<a href="models/{slug}.html">{_esc(all_models[slug].title)}</a>',
-                    "design": design["name"],
                     "qubits": design["qubits"],
                     "classical bits": design["clbits"],
                     "depth": design["depth"],
                     "gates": design["size"],
                 }
             )
-    parts.append(_table(pd.DataFrame(rows), "Every circuit design in the catalogue"))
+    parts.append(
+        _html_table(
+            rows,
+            f"Every circuit design in the catalogue - click a design to jump to it",
+        )
+    )
     for letter, grouped in models_by_module().items():
         slugs_here = [model.slug for model in grouped if model.slug in all_circuits]
         if not slugs_here:
             continue
         parts.append(f"<h2>Module {letter}: {_esc(grouped[0].module_title())}</h2>")
         for slug in slugs_here:
+            links = " &middot; ".join(
+                f'<a href="#{_anchor(slug, design["name"])}">{_esc(design["name"])}</a>'
+                for design in all_circuits[slug]
+            )
             parts.append(
                 f'<h3><a href="models/{slug}.html">{_esc(all_models[slug].title)}</a></h3>'
+                f'<p class="lede-meta">{links}</p>'
             )
             for design in all_circuits[slug]:
                 information = all_figures[slug].get(f"circuit: {design['name']}", {})
                 path = (information.get("path") or "").replace("../", "", 1)
-                parts.append(_circuit_block(design, path or None, information.get("description", "")))
+                parts.append(
+                    f'<div id="{_anchor(slug, design["name"])}">'
+                    + _circuit_block(design, path or None, information.get("description", ""))
+                    + '<p class="lede-meta"><a href="#top">&#8593; back to the list of designs</a></p>'
+                    + "</div>"
+                )
     return "\n".join(parts), total
 
 
@@ -629,100 +807,6 @@ def _real_world_page(all_models: dict, all_results: dict, all_figures: dict, all
     return "\n".join(parts)
 
 
-def _checks_page(all_models: dict, repo_url: str, repository: Path, *, figures: int, circuits: int) -> str:
-    """How to check all twenty-three models, and what each option looks at."""
-    import pandas as pd
-
-    commands = [
-        ("python model_tests/run_all.py", "Every model: parameters, numbers, classical comparison, backends, flags, circuits and every figure. Writes a report per model into model_tests/out/."),
-        ("python model_tests/run_all.py --fast", "The same checks with fewer shots and no compiled-backend comparison: about a minute."),
-        ("python model_tests/run_all.py --models question-order auctions", "Only the models you name."),
-        ("python model_tests/run_all.py --no-save", "Print the result and write nothing."),
-        ("python model_tests/module_a/02_question_order.py", "One model on its own, with its figures and its report."),
-        ("qcog evidence", "The library's own evidence table: the identities every model has to satisfy."),
-        ("python scripts/check_figures.py", "Renders every visualization and reads each drawing back against the data it came from."),
-        ("python scripts/check_docs.py", "Checks that the documentation still matches the code: counts, commands, file lists, parameters."),
-        ("python scripts/check_website.py", "Checks the generated site: structure, alt text, links, and that every figure is a chart."),
-        ("python -m pytest", "The package's own test suite."),
-    ]
-    parts = [
-        "<h1>Checking all 23 models</h1>",
-        f'<p class="lead">The catalogue has {len(all_models)} models, {figures} figures and {circuits} circuit '
-        "designs. Everything on this site is generated from them, and everything generated from them can be "
-        "checked. These are the options, from the whole catalogue to a single model.</p>",
-        "<h2>The commands</h2>",
-        _table(pd.DataFrame(commands, columns=["command", "what it checks"]), "What to run, and what it covers"),
-        "<h2>What a model is checked for</h2>",
-        '<table><thead><tr><th>Area</th><th>What is checked</th></tr></thead><tbody>'
-        "<tr><td>Catalogue entry</td><td>slug, module, title, question, mechanism, classical baseline, "
-        "keywords, references, caveats, difficulty</td></tr>"
-        "<tr><td>Parameters</td><td>documented and labelled, bounds ordered and containing the default, "
-        "unknown names refused, wrong types refused, unknown choices refused, values past a bound clamped, "
-        "and every parameter changing the result</td></tr>"
-        "<tr><td>The numbers</td><td>joint distributions normalised, probabilities in range, marginals "
-        "summing to one, findings and summary present</td></tr>"
-        "<tr><td>Classical comparison</td><td>model and baseline value per row, a zero baseline carrying its "
-        "explanation, the chart drawing exactly those rows, <code>classical=False</code> removing the chart, "
-        "unknown classical options reported</td></tr>"
-        "<tr><td>Execution</td><td>determinism, the sampled backend reproducible and within sampling error, "
-        "the compiled backends agreeing with the analytic result or refusing with a reason, unknown backends "
-        "refused, and the <code>sweeps</code>, <code>circuits</code>, <code>classical</code> and "
-        "<code>circuit_style</code> flags honoured</td></tr>"
-        "<tr><td>Circuits</td><td>every design builds and is stable, sane qubits and gate counts, no "
-        "<code>reset</code>, written as PNG, SVG and PDF, and where a design matches a sequential result the "
-        "drawn circuit is run and compared with the model's own probabilities</td></tr>"
-        "<tr><td>Figures</td><td>a graph rather than a panel of text, a description that names its numbers, "
-        "labels, series separated by more than colour, structural agreement with the data, and a PNG that is "
-        "not blank</td></tr>"
-        "</tbody></table>",
-        "<h2>The options on a run</h2>",
-        _table(
-            pd.DataFrame(
-                [
-                    ("--backend exact|sampled|aer|aer_exact|ionq", "How the interview is executed. The analytic default is exact; sampled draws finite shots; the Aer backends run the compiled circuits; IonQ submits them."),
-                    ("--shots N", "Number of samples for a shot-based backend."),
-                    ("--seed N", "Seed, so a sampled run is reproducible."),
-                    ("--sweeps / --no-sweeps", "Whether the parameter sweeps are computed and drawn."),
-                    ("--circuits / --no-circuits", "Whether the circuits are drawn."),
-                    ("--circuit-style default|iqp|clifford|bw", "The Qiskit drawer style; bw is the black-and-white one this site uses."),
-                    ("--circuit-scale, --circuit-fold", "The size of the drawing and how many gates fit on a line."),
-                    ("--classical / --no-classical", "Whether the comparison with the classical baseline is computed."),
-                    ("--classical-option NAME=VALUE", "A setting for the model's own classical baseline; anything the model does not honour is reported rather than dropped."),
-                    ("--param NAME=VALUE", "Any model parameter; every one is documented on its model page."),
-                ],
-                columns=["option", "what it does"],
-            ),
-            "qcog run accepts all of these",
-        ),
-        "<h2>The test files</h2>",
-        '<p class="lede-meta">One file per model. Each runs the shared battery plus the checks that only '
-        "make sense for that model.</p>",
-    ]
-    files = []
-    order = list(all_models)
-    for letter, grouped in models_by_module().items():
-        folder = f"module_{letter.lower()}"
-        for model in grouped:
-            if model.slug not in all_models:
-                continue
-            number = order.index(model.slug) + 1
-            script = next(
-                (item for item in sorted((repository / "model_tests" / folder).glob("*.py")) if item.stem.startswith(f"{number:02d}_")),
-                None,
-            )
-            name = script.name if script else folder
-            files.append(
-                {
-                    "module": letter,
-                    "model": f'<a href="models/{model.slug}.html">{_esc(model.title)}</a>',
-                    "test file": f'<a href="{repo_url}/blob/main/model_tests/{folder}/{name}">{_esc(name)}</a>',
-                    "checks": f"{'shared battery' if not script else 'battery + its own claims'}",
-                }
-            )
-    parts.append(_table(pd.DataFrame(files), "One test file per model in the catalogue"))
-    return "\n".join(parts)
-
-
 def build_site(*args, **kwargs) -> dict:
     """Generate the whole site in black and white and return a summary of what was written."""
     with monochrome():
@@ -842,7 +926,7 @@ def _build_site(
     )
     summary["sections"]["models"] = len(slugs)
 
-    # ------------------------------------------------------------------ circuits and checks
+    # ------------------------------------------------------------------ the circuit gallery
     circuits_body, circuit_count = _circuits_page(all_models, all_circuits, all_figures)
     write(
         "circuits.html",
@@ -857,20 +941,6 @@ def _build_site(
         ),
     )
     summary["sections"]["circuits"] = circuit_count
-    checks_body = _checks_page(
-        all_models, repo_url, repository, figures=summary["figures"], circuits=circuit_count
-    )
-    write(
-        "checks.html",
-        _page(
-            "Checking all 23 models - Q-Cog",
-            checks_body,
-            active="checks.html",
-            depth=0,
-            description="How to check every model: the commands, the options and what each one covers.",
-            repo_url=repo_url,
-        ),
-    )
 
     # ------------------------------------------------------------------ the five comparative cases
     if include_study:
@@ -896,11 +966,11 @@ def _build_site(
     if include_notebook:
         notebook = repository / "demos" / "quickstart.ipynb"
         if notebook.exists():
-            body, charts, cells = _notebook_page(notebook)
+            body, charts, cells = _notebook_page(notebook, figures_dir)
             write(
                 "notebook.html",
                 _page(
-                    "Quickstart notebook - Q-Cog",
+                    "Q-Cog quickstart: a two-question survey - Q-Cog",
                     body,
                     active="notebook.html",
                     depth=0,
@@ -915,8 +985,10 @@ def _build_site(
         examples_dir = repository / "demos" / "examples"
         scripts = sorted(examples_dir.glob("*.py")) if examples_dir.exists() else []
         landing = ["<h1>Examples</h1>",
-                   '<p class="lead">Runnable scripts, one task each. The output shown is what the script prints '
-                   'when it runs from the repository root.</p><ul class="cards">']
+                   '<p class="lead">Six runnable scripts, one task each, from a five-minute first look to the '
+                   "full catalogue. Every page gives the scenario, what to look for in the output, what the "
+                   "numbers mean, the captured output itself and the whole script. The output shown is what "
+                   'the script prints when it runs from the repository root.</p><ul class="cards">']
         for script in scripts:
             relative = f"demos/examples/{script.name}"
             output = None
@@ -944,9 +1016,12 @@ def _build_site(
                     repo_url=repo_url,
                 ),
             )
+            one_liner = (EXAMPLE_GUIDES.get(script.stem) or {}).get("one_liner", "")
             landing.append(
                 f'<li><h3><a href="{page}">{_esc(title)}</a></h3>'
-                f'<p class="lede-meta">{_esc(script.name)}</p></li>'
+                f'<p class="lede-meta">{_esc(script.name)}</p>'
+                + (f"<p>{_esc(one_liner)}</p>" if one_liner else "")
+                + "</li>"
             )
         landing.append("</ul>")
         landing.append(
@@ -1046,9 +1121,12 @@ def _build_site(
         study_cases = _table(pd.DataFrame(rows), "Where the quantum account does better")
     home = [
         "<h1>Q-Cog</h1>",
-        '<p class="lead">Quantum probability, for questions about people: twenty-three models of judgement, '
-        "decision making and collective behaviour, simulated with Qiskit - each with a circuit, a classical "
-        "baseline, and a measured comparison between the two.</p>",
+        '<p class="lead">Q-Cog models human judgement with quantum probability, on Qiskit, and always '
+        'beside the classical account of the same situation. Twenty-three models of judgement, decision '
+        "making and collective behaviour: each one simulated, drawn as a circuit, compared with what a "
+        "classical probability space predicts, and honest about what it does not claim.</p>"
+        '<p>It exists to answer one question - <em>does the quantum account earn its place, and '
+        "where?</em> - and to make the answer checkable rather than rhetorical.</p>",
         f'<p><span class="badge">{len(MODELS)} models</span><span class="badge">{len(MODULES)} modules</span>'
         f'<span class="badge">{summary["figures"]} figures</span>'
         f'<span class="badge">{summary["sections"].get("circuits", 0)} circuits</span>'
@@ -1063,18 +1141,31 @@ def _build_site(
         "actually ask, each with the command, the numbers and the circuit.</p></li>"
         '<li><h3><a href="study.html">The five cases</a></h3><p>Where the quantum account measurably beats the '
         "classical one - and the two controls where a classical model survives.</p></li>"
-        '<li><h3><a href="checks.html">Checking it</a></h3><p>How to check all twenty-three models: the '
-        "commands, the run options, and what each one covers.</p></li>"
-        '<li><h3><a href="notebook.html">The notebook</a></h3><p>One survey asked in both orders, end to '
-        "end: the order effect, the classical identity that fails, the circuit, a simulator run.</p></li>"
+        '<li><h3><a href="examples/index.html">The examples</a></h3><p>Six runnable scripts, each with its '
+        "scenario, its output and what the numbers mean.</p></li>"
+        '<li><h3><a href="notebook.html">Quickstart</a></h3><p>One survey asked in both orders, end to end: '
+        "the order effect, the classical identity that fails, the circuits, a simulator run - with the "
+        "charts it produced.</p></li>"
         "</ul>",
-        "<h2>The five comparative cases</h2>" if study_cases else "",
+        "<h2>Why: five measured cases</h2>" if study_cases else "",
+        "<p>Quantum cognition is worth the trouble only if it does something the classical account "
+        "cannot. So the library measures that first, on five phenomena, and publishes the result either "
+        "way. Each case shows one of three things: the classical model <strong>cannot represent the "
+        "observation at all</strong> (S1), the quantum model <strong>predicts a number with no free "
+        "parameters</strong> (S2), or it explains the same data with <strong>fewer assumptions</strong> "
+        "(S3). Two of the five include a classical model that is not rejected, and every case states "
+        "what it does <em>not</em> show.</p>",
         study_cases,
+        '<p class="lede-meta"><a href="study.html">The five cases in full</a> &middot; what is compared, '
+        "by how much, and the limits of each claim.</p>"
+        if study_cases
+        else "",
         "<h2>What every model does</h2>",
         "<p>Each one is simulated with <strong>Qiskit</strong>, reports the same quantity computed by a "
         "<strong>classical</strong> account of the same situation, states the <strong>caveats</strong> that "
-        "limit its claims, and draws its <strong>circuit</strong>. The library checks itself, and so does "
-        'this site: <a href="checks.html">all twenty-three models</a>.</p>',
+        "limit its claims, and draws its <strong>circuit</strong>. The library checks itself: the evidence "
+        "table, the figure checks, the documentation checks and a model-by-model test suite all run in the "
+        "repository.</p>",
         "<h2>Install and run</h2>",
         '<pre class="code" data-language="bash"><code>pip install qcog                 # from PyPI, once released\n'
         "git clone &lt;this repository&gt;     # or from a checkout\n"
