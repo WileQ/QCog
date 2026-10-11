@@ -238,6 +238,8 @@ anything - switch Pages on once in Settings -> Pages -> Build and deployment -> 
 site appears at `https://<you>.github.io/<repo>/`. Being static, it needs no server and no dependencies:
 the same content is reachable with nothing to install and nothing to run.
 
+Can be accessed here: https://wileq.github.io/QCog/
+
 ## Reports you can publish
 
 ```python
