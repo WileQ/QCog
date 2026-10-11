@@ -165,19 +165,23 @@ def section_demos() -> None:
                f"exit {completed.returncode}, {len(completed.stdout)} characters")
 
     notebook = ROOT / "demos" / "quickstart.ipynb"
-    notebook_program = f'''
-    import json, os, sys, tempfile
-    os.environ.setdefault("MPLBACKEND", "Agg")
-    sys.path.insert(0, {str(ROOT / "src")!r})
-    import matplotlib.pyplot as plt
-    cells = [c for c in json.load(open({str(notebook)!r}, encoding="utf-8"))["cells"] if c["cell_type"] == "code"]
-    namespace = {{"display": lambda obj: plt.close(obj) if hasattr(obj, "savefig") else None}}
-    directory = tempfile.mkdtemp()
-    os.chdir({str(ROOT / "demos")!r})
-    for number, cell in enumerate(cells, 1):
-        exec(compile("".join(cell["source"]), f"cell-{{number}}", "exec"), namespace)
-    print("cells executed:", len(cells), "model:", namespace["model"].slug)
-    '''
+    # built line by line rather than as an indented block: the snippet is compiled by the
+    # interpreter that runs it, so every line has to start where Python expects it
+    notebook_program = "\n".join(
+        [
+            "import json, os, sys, tempfile",
+            "os.environ.setdefault('MPLBACKEND', 'Agg')",
+            f"sys.path.insert(0, {str(ROOT / 'src')!r})",
+            "import matplotlib.pyplot as plt",
+            f"notebook = json.load(open({str(notebook)!r}, encoding='utf-8'))",
+            "cells = [cell for cell in notebook['cells'] if cell['cell_type'] == 'code']",
+            "namespace = {'display': lambda obj: plt.close(obj) if hasattr(obj, 'savefig') else None}",
+            f"os.chdir({str(ROOT / 'demos')!r})",
+            "for number, cell in enumerate(cells, 1):",
+            "    exec(compile(''.join(cell['source']), f'cell-{number}', 'exec'), namespace)",
+            "print('cells executed:', len(cells), 'model:', namespace['model'].slug)",
+        ]
+    )
     completed = subprocess.run([PY, "-c", notebook_program], cwd=ROOT, capture_output=True, text=True, timeout=600)
     record("the quickstart notebook executes top to bottom", completed.returncode == 0,
            completed.stdout.strip()[-60:] or completed.stderr.strip()[-70:])
