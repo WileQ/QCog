@@ -368,7 +368,10 @@ docs/            project page, methodology, accessibility, packaging, demo scrip
   does better than the classical one, each labelled with the sense of "better" it uses, with its report,
   `results.json` and one graph per case. Two of the five include a classical model that is *not* rejected.
 * [`scripts/check_figures.py`](scripts/check_figures.py) - renders every visualization and reports;
-  [`scripts/check_docs.py`](scripts/check_docs.py) - verifies that the documentation matches the code.
+  [`scripts/check_docs.py`](scripts/check_docs.py) - verifies that the documentation matches the code;
+  [`scripts/audit.py`](scripts/audit.py) - drives the installed interfaces end to end: every model
+  through the command line, every flag (and the ones that must be refused), the circuits in four
+  styles and three formats, the packaging, the demos and the repository's own promises.
 * [`docs/project_page.md`](docs/project_page.md) - the project page: what it does, what problem it explores,
   how to run it, how to replicate or extend it.
 * [`docs/methodology.md`](docs/methodology.md) - the mathematics, the conventions, and the statistical tests.
